@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstring>
 
 using namespace std;
 
@@ -22,23 +23,63 @@ struct Infraccion
     int conductorId;
     int provincia;
 };
+
+struct NodoIdConductor
+{
+   int id_conductor; 
+   NodoIdConductor *next;
+};
+
+struct NodoConductor
+{
+    Conductor conductor;
+    NodoConductor *next;
+};
+
+struct NodoInfraccion
+{
+    Infraccion infraccion;
+    NodoInfraccion *next;
+};
+
 /**** FIN DECLARACIONES DE CONSTANTES ****/
 
 /**** DECLARACIONES DE FUNCIONES ****/
 void mostrarMenu(int &opcionMenu);
 
 //Conductores
-void cargarConductoresEnMemoria(Conductor *conductores , int &totalConductores);
-void crearNuevoConductor();
 void agregarConductorAlArchivo(Conductor conductor);
-void listarTodosLosConductores(Conductor *conductores, int totalConductores);
 void mostrarConductor(Conductor conductor);
 void desactivarConductor(int conductorId);
+void mostrar_informe();
+
+//Listas conductores
+void cargarConductoresEnMemoria(NodoConductor *&listaConductores); //Esta función genera una lista SE de conductores
+
+//CRUD Listas conductores
+void insertarConductorAlFinal(NodoConductor *&listaConductores, Conductor conductor);
+void actualizarConductorEnLista(NodoConductor *listaConductores , Conductor  conductor);
+void listarTodosLosConductores(NodoConductor *listaConductores);
+Conductor crearNuevoConductor();
+NodoConductor *obtenerUltimoConductor(NodoConductor *listaConductores);
+
 
 //Infracciones
+void cargar_infraccion_1(Conductor conductor);
+void cargar_infraccion_2(Infraccion &infra,char fecha[],int infra_id,float monto,int provincia,int id_conductor);
+void mostrar_infra(Infraccion infra);
+void mostar_infra_de_conductor();
+void mostrar_infractores_de_una_provincia();
+
+
+void generarInfraccionesRandom(int cantidadInfracciones);
 
 //Ayudines
 void limpiarConsola();
+int generarNumeroEnteroRandom(int min , int max);
+float generarNumeroDecimalRandom(float min , float max);
+
+
 /**** FIN DECLARACIONES DE FUNCIONES ****/
 
 int main()
@@ -46,9 +87,10 @@ int main()
     int opcionMenu;
     int conductorId;
     int totalConductores = 0;
-    struct Conductor conductores[100];
-
-    cargarConductoresEnMemoria(conductores , totalConductores);
+    int cantidadRandomInfracciones;
+    NodoConductor *listaConductores = NULL;
+    
+    cargarConductoresEnMemoria(listaConductores);
     mostrarMenu(opcionMenu);
 
     while (opcionMenu != 0)
@@ -56,44 +98,104 @@ int main()
         switch (opcionMenu)
         {
         case 1:
-            crearNuevoConductor();
-            cargarConductoresEnMemoria(conductores ,  totalConductores);
+            insertarConductorAlFinal(listaConductores , crearNuevoConductor());
             break;
         case 2:
-            listarTodosLosConductores(conductores , totalConductores);
+            listarTodosLosConductores(listaConductores);
             break;
         case 3:
-            listarTodosLosConductores(conductores , totalConductores);
+            listarTodosLosConductores(listaConductores);
             cout << "Ingrese un ID de conductor para desactivar: "  << endl;
             cin >> conductorId;
             desactivarConductor(conductorId);
-            cargarConductoresEnMemoria(conductores , totalConductores);
             break;
         case 4:
+            //mostrar_infractores_de_una_provincia();
+            break;
         case 5:
         case 6:
+            //listarTodosLosConductores(conductores , totalConductores);
+            //mostrar_informe();
+            break;
         case 7:
         case 8:
-            system("clear");
+            system("cls");
             cout << "Esta funcion todavia no se encuentra desarrollada" << endl;
             break;
+        case 9: 
+            while (cantidadRandomInfracciones < 5 || cantidadRandomInfracciones > 500)
+            {
+                cout << "Ingrese una cantidad de infracciones a ser generadas de manera random (5min - 500max): " << endl;
+                cin >> cantidadRandomInfracciones;
+            }
+            generarInfraccionesRandom(cantidadRandomInfracciones);
         default:
             break;
         }
-
         mostrarMenu(opcionMenu);
     }
 
+    cout << "\nEl programa ha finalizado." << endl;
     return 0;
 }
 
 
+/** Subprogramas **/
+
+void insertarConductorAlFinal(NodoConductor *&listaConductores , Conductor conductor)
+{
+    NodoConductor *aux;
+
+    if(listaConductores == NULL)
+    {
+        listaConductores = new NodoConductor();
+        listaConductores->conductor = conductor;
+        listaConductores->next = NULL;
+    }
+    else
+    {
+        aux = obtenerUltimoConductor(listaConductores);
+        aux->next = new NodoConductor();
+        aux = aux->next; 
+        aux->conductor = conductor;
+        aux->next = NULL;
+    }
+}
+
+void generarInfraccionesRandom(int cantidadInfracciones)
+{
+    /*
+    Okey, para generar infracciones random tenemos un tema, basicamente
+    necesitamos todos los ID de conductores que ya existan en el archivo
+    ya que en caso contrario se podrian generar infracciones para 
+    conductores que no existen.
+    Por ende la secuencia de pasos a seguir para generar infracciones random va a ser:
+    1- Obtener un array con todos los ID de conductores que tengamos, dado que nunca vamos
+    a saber cuantos conductores vamos a tener vamos a utilizar una LSE. 
+    2- Para la fecha hora vamos a randomear solo los meses,dias y año, ya que es el dato por el 
+    cual vamos a filtrar en un futuro. Hora y minutos lo vamos a dejar estatico.
+    3- Para el monto simple, vamos a generar un random entre 1000,00 y 100000,99
+    4- Para la provincia vamos a tirar un random entre 1 y 24 que son las provincias que tenemos
+    5- Para obtener IDs correctos de las infracciones debemos acceder al archivo "procesados" y obtener
+    el último id y empezar a contar a partir de ahi ( cuidado aca tiene que estar ordenado por los ID )
+    5- Todo esto lo vamos a hacer en memoria y luego pasarlos a un archivo.
+    */
+    struct Infraccion
+        {
+            int infraccionId;
+            char fechaHora[13]; //AAAAMMDDHH:MM
+            float monto;
+            int conductorId;
+            int provincia;
+        };
+
+}
 
 void mostrarConductor(Conductor conductor)
 {
     cout << "-----------------------------------------------------------------" << endl;
 
-    cout << "Informacion acerca del conductor con ID: " << conductor.conductorId << endl;
+    cout << "Información acerca del conductor con ID: " << conductor.conductorId << endl;
 
     cout << "Email: " << conductor.email << endl;
 
@@ -107,12 +209,23 @@ void mostrarConductor(Conductor conductor)
 
 }
 
+NodoConductor *obtenerUltimoConductor(NodoConductor *listaConductores)
+{
+    while(listaConductores && listaConductores->next)
+    {
+        listaConductores = listaConductores->next;
+    }
+
+    return listaConductores;
+}
+
+
 void desactivarConductor(int conductorId)
 {
     /*
     Para desactivar un conductor:
     1 - Debemos mostrar una lista de los conductores existentes
-    2 - Debemos guardar el ingreso del conductorId 
+    2 - Debemos guardar el ingreso del conductorId
     3 - Abrimos el archivo de conductores en modo rb+
     4 - Buscamos el conductor por ID
     5 - Actualizamos activo = false;
@@ -143,7 +256,7 @@ void desactivarConductor(int conductorId)
 
     /*
     esto es tremendo, basicamente lo que pasa aca es que para escribir en la posicion deseada
-    hay que restarle a la posicion donde esta el struct guardado el tamaño del propio struct
+    hay que restarle a la posicion donde esta el struct guardado el tama�o del propio struct
     para que edite justo esa linea.
     */
     fseek( f , posicionConductor - sizeof(Conductor) , SEEK_SET );
@@ -153,15 +266,18 @@ void desactivarConductor(int conductorId)
     fclose(f);
 }
 
-void listarTodosLosConductores(Conductor *conductores , int totalConductores)
+void listarTodosLosConductores(NodoConductor *listaConductores)
 {
-    for(int i = 0; i < totalConductores ; i++)
+    NodoConductor *paux = listaConductores;
+
+    while(paux)
     {
-        mostrarConductor(conductores[i]);
+        mostrarConductor(paux->conductor);
+        paux = paux->next;
     }
 }
 
-void crearNuevoConductor()
+Conductor crearNuevoConductor()
 {
     Conductor conductor;
 
@@ -179,6 +295,8 @@ void crearNuevoConductor()
     conductor.activo = true;
 
     agregarConductorAlArchivo(conductor);
+
+    return conductor;
 }
 
 void agregarConductorAlArchivo(Conductor conductor)
@@ -196,22 +314,11 @@ void agregarConductorAlArchivo(Conductor conductor)
     cout << "El conductor con ID: " << conductor.conductorId << ". Fue guardado exitosamente en el archivo" << endl;
 }
 
-
-void cargarConductoresEnMemoria(Conductor *conductores , int &totalConductores)
+void cargarConductoresEnMemoria(NodoConductor *&listaConductores)
 {
-    /*
-    Para cargar todos los conductores:
-    
-    1 - Debemos abrir el archivo conductores
-    2 - Vamos a cargar en memoria un array de conductores
-
-    TODO: Primero se va a hacer con un array fijo de posiciones
-    luego voy a utilizar listas SE(simplemente enlazada) para 
-    no estar limitado por el tamaño del array
-    */
-    totalConductores = 0;
-
     FILE *f;
+    NodoConductor *aux;
+    Conductor conductor_aux;
 
     f = fopen("conductores.bin", "rb");
 
@@ -221,10 +328,11 @@ void cargarConductoresEnMemoria(Conductor *conductores , int &totalConductores)
         return;
     }
 
-    while (fread(&conductores[totalConductores], sizeof(Conductor), 1, f) == 1)
+    while ( fread(&conductor_aux, sizeof(Conductor), 1, f) == 1 )
     {
-        totalConductores++;
+        insertarConductorAlFinal(listaConductores , conductor_aux);
     }
+
 
     fclose(f);
 }
@@ -254,4 +362,134 @@ void mostrarMenu(int &opcionMenu)
     cout << "**************************************************" << endl;
 
     cin >> opcionMenu;
+}
+
+void cargar_infraccion_1(Conductor conductor)
+{
+    FILE *f;
+    Infraccion infra;
+    int infra_id_ultimo=0;
+    f=fopen("infracciones","rb");
+    if (f == NULL)
+    {   // para comprobar si existe el archivo de infracciones
+        // o crearlo si fuera necesario.
+        f=fopen("infracciones","wb");
+    }
+    else
+    {
+        fseek(f,(-1)*sizeof(Infraccion),SEEK_END);
+        fread(&infra,sizeof(Infraccion),1,f);
+        infra_id_ultimo = infra.infraccionId;
+    }
+    fclose(f);
+    // si es la primera vez q se abre el archivo, no ejecuta el else
+    // entonces,infra_id_ultimo=0.
+    fopen("infracciones","ab");
+    for (int l=0;l<conductor.totalInfracciones;l++)
+    {
+        cargar_infraccion_2(infra,"2022062213:30",infra_id_ultimo+l+1,l+150.83,2,conductor.conductorId);
+        fwrite(&infra,sizeof(Infraccion),1,f);
+        // escribe las infracciones en el archivo de infracciones
+    }
+    fclose(f);
+    return;
+}
+
+void cargar_infraccion_2(Infraccion &infra,char fecha[],int infra_id,float monto,int provincia,int id_conductor)
+{
+    strcpy(infra.fechaHora,fecha);
+    infra.infraccionId=infra_id;
+    infra.monto=monto;
+    infra.provincia=provincia;
+    infra.conductorId=id_conductor;
+    return;
+}
+
+void mostrar_infra(Infraccion infra)
+{
+    cout << "\n*ID de la infraccion: " << infra.infraccionId << endl;
+    cout << "*Fecha y hora de la infraccion: " << infra.fechaHora << endl;
+    cout << "*Monto a abonar: " << infra.monto << endl;
+    cout << "*Provincia en la que se cometio: " << infra.provincia << endl;
+    return;
+}
+
+void mostar_infra_de_conductor()
+{
+    Infraccion infra;
+    FILE *f;
+    int id_a_buscar;
+    f=fopen("infracciones","rb");
+    cout << "Ingrese Id del conductor: " << endl;
+    cin >> id_a_buscar;
+    while (fread(&infra,sizeof(Infraccion),1,f))
+    {
+        if (infra.conductorId==id_a_buscar)
+        {
+            mostrar_infra(infra);
+        }
+    }
+    fclose(f);
+    return;
+}
+
+void mostrar_infractores_de_una_provincia()
+{
+    // Listar todos los conductores que tengan al menos
+    // una infracción en una provincia determinada.
+    int prov_a_buscar = -1;
+    FILE *f;
+    Infraccion infra;
+    int id_anterior;
+
+    //Validación solo para verificar que ingrese un número correcto
+    while (prov_a_buscar < 1 || prov_a_buscar > 24)
+    {
+        cout << "Ingrese provincia de la que quiera ver sus infractores (1-24): " << endl;
+        cin >> prov_a_buscar;
+    }
+
+    cout << "\nInfractores de la provincia: " << prov_a_buscar << endl;
+
+    f=fopen("infracciones","rb");
+    while (fread(&infra,sizeof(Infraccion),1,f))
+    {
+        if(infra.conductorId!=id_anterior && infra.provincia==prov_a_buscar)
+            {
+                cout << "*ID del infractor: " << infra.conductorId << endl;
+            }
+        id_anterior=infra.conductorId;
+    }
+    fclose(f);
+    return;
+}
+
+void mostrar_informe()
+{
+    int id;
+    cout << "Ingrese ID del conductor del que quiere ver su informe: " << endl;
+    cin >> id;
+    Conductor conductor;
+    FILE *f;
+    f=fopen("conductores.bin","r");
+    while (fread(&conductor,sizeof(Conductor),1,f))
+    {
+        if (conductor.conductorId==id)
+        {
+            mostrarConductor(conductor);
+        }
+    }
+    fclose(f);
+    Infraccion infra;
+    f=fopen("infracciones","rb");
+    cout << "Informacion sobre sus infracciones: " << endl;
+    while (fread(&infra,sizeof(Infraccion),1,f))
+    {
+        if(infra.conductorId==id)
+        {
+            mostrar_infra(infra);
+        }
+    }
+    fclose(f);
+    return;
 }

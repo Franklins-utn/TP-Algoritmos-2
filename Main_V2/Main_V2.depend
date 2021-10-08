@@ -1,7 +1,0 @@
-# depslib dependency file v1.0
-1632322676 source:d:\facultad utn\1er año\algoritmo y estructura de datos\tp2\main_v2\main.cpp
-	<iostream>
-	<stdio.h>
-	<stdlib.h>
-	<cstring>
-
