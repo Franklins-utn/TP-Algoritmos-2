@@ -9,7 +9,7 @@ using namespace std;
 struct Conductor
 {
     int conductorId;
-    double fechaVencimiento;
+    long fechaVencimiento;
     bool activo;
     int totalInfracciones;
     char email[100];
@@ -22,12 +22,6 @@ struct Infraccion
     float monto;
     int conductorId;
     int provincia;
-};
-
-struct NodoIdConductor
-{
-   int id_conductor; 
-   NodoIdConductor *next;
 };
 
 struct NodoConductor
@@ -58,8 +52,8 @@ void cargarConductoresEnMemoria(NodoConductor *&listaConductores); //Esta funci√
 //CRUD Listas conductores
 void insertarConductorAlFinal(NodoConductor *&listaConductores, Conductor conductor);
 void listarTodosLosConductores(NodoConductor *listaConductores);
-void desactivarConductor(NodoConductor *&listaConductores ,  int conductorId);
-Conductor crearNuevoConductor(NodoConductor *&listaConductores);
+void desactivarConductor(NodoConductor *listaConductores ,  int conductorId);
+Conductor crearNuevoConductor(NodoConductor *listaConductores);
 NodoConductor *obtenerUltimoConductor(NodoConductor *listaConductores);
 
 
@@ -71,7 +65,7 @@ void mostar_infra_de_conductor();
 void mostrar_infractores_de_una_provincia();
 
 
-void generarInfraccionesRandom(int cantidadInfracciones);
+void generarInfraccionesRandom( int cantidadInfracciones);
 
 //Ayudines
 void limpiarConsola();
@@ -201,15 +195,6 @@ void generarInfraccionesRandom(int cantidadInfracciones)
     el √∫ltimo id y empezar a contar a partir de ahi ( cuidado aca tiene que estar ordenado por los ID )
     5- Todo esto lo vamos a hacer en memoria y luego pasarlos a un archivo.
     */
-    struct Infraccion
-        {
-            int infraccionId;
-            char fechaHora[13]; //AAAAMMDDHH:MM
-            float monto;
-            int conductorId;
-            int provincia;
-        };
-
 }
 
 void mostrarConductor(Conductor conductor)
@@ -241,7 +226,7 @@ NodoConductor *obtenerUltimoConductor(NodoConductor *listaConductores)
 }
 
 
-void desactivarConductor(NodoConductor *&listaConductores ,  int conductorId)
+void desactivarConductor(NodoConductor *listaConductores ,  int conductorId)
 {
     /*
     Para desactivar un conductor:
@@ -312,7 +297,7 @@ void listarTodosLosConductores(NodoConductor *listaConductores)
     }
 }
 
-Conductor crearNuevoConductor(NodoConductor *& listaConductores)
+Conductor crearNuevoConductor(NodoConductor * listaConductores)
 {
     Conductor conductor;
     NodoConductor *ultimo_conductor = obtenerUltimoConductor(listaConductores);
