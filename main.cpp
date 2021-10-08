@@ -50,7 +50,6 @@ void mostrarMenu(int &opcionMenu);
 //Conductores
 void agregarConductorAlArchivo(Conductor conductor);
 void mostrarConductor(Conductor conductor);
-void desactivarConductor(int conductorId);
 void mostrar_informe();
 
 //Listas conductores
@@ -58,8 +57,8 @@ void cargarConductoresEnMemoria(NodoConductor *&listaConductores); //Esta funci√
 
 //CRUD Listas conductores
 void insertarConductorAlFinal(NodoConductor *&listaConductores, Conductor conductor);
-void actualizarConductorEnLista(NodoConductor *listaConductores , Conductor  conductor);
 void listarTodosLosConductores(NodoConductor *listaConductores);
+void desactivarConductor(NodoConductor *&listaConductores ,  int conductorId);
 Conductor crearNuevoConductor();
 NodoConductor *obtenerUltimoConductor(NodoConductor *listaConductores);
 
@@ -81,7 +80,6 @@ float generarNumeroDecimalRandom(float min , float max);
 
 
 /**** FIN DECLARACIONES DE FUNCIONES ****/
-
 int main()
 {
     int opcionMenu;
@@ -107,7 +105,7 @@ int main()
             listarTodosLosConductores(listaConductores);
             cout << "Ingrese un ID de conductor para desactivar: "  << endl;
             cin >> conductorId;
-            desactivarConductor(conductorId);
+            desactivarConductor(listaConductores ,  conductorId);
             break;
         case 4:
             //mostrar_infractores_de_una_provincia();
@@ -161,6 +159,7 @@ void insertarConductorAlFinal(NodoConductor *&listaConductores , Conductor condu
         aux->next = NULL;
     }
 }
+
 
 void generarInfraccionesRandom(int cantidadInfracciones)
 {
@@ -220,7 +219,7 @@ NodoConductor *obtenerUltimoConductor(NodoConductor *listaConductores)
 }
 
 
-void desactivarConductor(int conductorId)
+void desactivarConductor(NodoConductor *&listaConductores ,  int conductorId)
 {
     /*
     Para desactivar un conductor:
@@ -230,15 +229,28 @@ void desactivarConductor(int conductorId)
     4 - Buscamos el conductor por ID
     5 - Actualizamos activo = false;
     6 - Cerramos el archivo
+    7 - Devolvemos el conductor para que se actualice en la lista
     */
     FILE *f;
     Conductor conductor;
     int posicionConductor = 0;
 
+    //Guardamos el inicio de la lista
+    NodoConductor *aux = listaConductores;
+    while(aux)
+    {
+        if(aux->conductor.conductorId == conductorId){
+            aux->conductor.activo = false; 
+        }
+
+        aux = aux->next;
+    }
+
+
     f = fopen("conductores.bin" , "rb+");
 
     while( fread(&conductor , sizeof(Conductor) , 1 , f) == 1  ){
-        if(conductor.conductorId = conductorId){
+        if(conductor.conductorId == conductorId){
             posicionConductor = ftell(f);
         }
     }
@@ -264,6 +276,7 @@ void desactivarConductor(int conductorId)
     fwrite(&conductor , sizeof(Conductor) , 1 , f);
 
     fclose(f);
+
 }
 
 void listarTodosLosConductores(NodoConductor *listaConductores)
