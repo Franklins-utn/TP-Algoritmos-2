@@ -1,0 +1,16 @@
+1- para usar acentos y esas cosas:
+linea 5: #include <locale.h>
+linea 85: setlocale(LC_ALL, "spanish");
+
+2-Exportar HTML
+linea 72: void exportarHTML(NodoConductor *listaConductores);
+linea 121: es la opcion del menu.
+linea 516: la funcion exportarHTML.
+
+3- Exportar CSV
+linea 73: void exportarCSV(NodoConductor *listaConductores);
+linea 124: es la opcion del menu.
+linea 563: la funcion exportarCSV.
+
+Notas:
+-No se que nombre ponerles a los archivos exportados y no puedo ver la consigna porque estoy programando sin internet :)
