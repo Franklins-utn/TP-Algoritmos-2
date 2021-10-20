@@ -41,8 +41,11 @@ struct NodoInfraccion
 
 /**** FIN DECLARACIONES DE CONSTANTES ****/
 
+
 /**** DECLARACIONES DE FUNCIONES ****/
+//Generales
 void mostrarMenu(int &opcionMenu);
+void finalizar_jornada(NodoInfraccion *listaInfracciones,NodoConductor *listaconductores);
 
 
 /** Conductores **/
@@ -71,14 +74,16 @@ void mostrar_infra(Infraccion infra);
 
 //Generar infracciones
 void generarInfraccionesRandom( int cantidadInfracciones);
+void agregar_infraccion();
 
 //Listas Infracciones
 void cargar_infracciones_en_memoria_ordena_infraID(NodoInfraccion *&listainfracciones);
 void cargar_infracciones_en_memoria_ordena_conducID(NodoInfraccion *&listainfracciones);
 void ingresar_ordenadamente_por_conducID(NodoInfraccion *&lista,Infraccion ticket);
 void ingresar_ordenadamente_por_infraccionID(NodoInfraccion *&lista,Infraccion ticket);
-int pop_nodoInfraccion(NodoInfraccion *&listainfracciones);
-
+void borrar_lista_infracciones(NodoInfraccion *&lista);
+void procesar_lote_de_infracciones(NodoInfraccion *&listainfraccines);
+void actualizar_archivo_procesados(NodoInfraccion *listaInfracciones);
 
 //Archivos de texto
 void exportarHTML(NodoConductor *listaConductores);
@@ -130,6 +135,7 @@ int main()
             mostrar_infractores_de_una_provincia(listaInfracciones);
             break;
         case 5:
+            procesar_lote_de_infracciones(listaInfracciones);
             break;
         case 6:
             mostrar_informe(listaInfracciones,listaConductores);
@@ -138,18 +144,9 @@ int main()
             exportarHTML(listaConductores);
             break;
         case 8:
-            exportarCSV(listaConductores);
-            break;
-            system("cls");
-            cout << "Esta funcion todavia no se encuentra desarrollada" << endl;
             break;
         case 9:
-            while (cantidadRandomInfracciones < 5 || cantidadRandomInfracciones > 500)
-            {
-                cout << "Ingrese una cantidad de infracciones a ser generadas de manera random (5min - 500max): " << endl;
-                cin >> cantidadRandomInfracciones;
-            }
-            generarInfraccionesRandom(cantidadRandomInfracciones);
+            finalizar_jornada(listaInfracciones,listaConductores);
             break;
         default:
             break;
@@ -160,6 +157,8 @@ int main()
     cout << "\nEl programa ha finalizado." << endl;
     return 0;
 }
+
+/** SUBPROGRAMAS GENERALES **/
 
 void mostrarMenu(int &opcionMenu)
 {
@@ -183,6 +182,15 @@ void mostrarMenu(int &opcionMenu)
     cin >> opcionMenu;
 }
 
+void finalizar_jornada(NodoInfraccion *listaInfracciones,NodoConductor *listaconductores)
+{
+    // Recibe todas las listas y actualiza los archivos
+    actualizar_archivo_procesados(listaInfracciones);
+    return;
+}
+
+/**** FIN SUBPROGRAMAS GENERALES ****/
+
 
 /** SUBPROGRAMAS DE CONDUCTORES **/
 
@@ -205,26 +213,6 @@ void insertarConductorAlFinal(NodoConductor *&listaConductores , Conductor condu
         aux->conductor = conductor;
         aux->next = NULL;
     }
-}
-
-void generarInfraccionesRandom(int cantidadInfracciones)
-{
-    /*
-    Okey, para generar infracciones random tenemos un tema, basicamente
-    necesitamos todos los ID de conductores que ya existan en el archivo
-    ya que en caso contrario se podrian generar infracciones para
-    conductores que no existen.
-    Por ende la secuencia de pasos a seguir para generar infracciones random va a ser:
-    1- Obtener un array con todos los ID de conductores que tengamos, dado que nunca vamos
-    a saber cuantos conductores vamos a tener vamos a utilizar una LSE.
-    2- Para la fecha hora vamos a randomear solo los meses,dias y año, ya que es el dato por el
-    cual vamos a filtrar en un futuro. Hora y minutos lo vamos a dejar estatico.
-    3- Para el monto simple, vamos a generar un random entre 1000,00 y 100000,99
-    4- Para la provincia vamos a tirar un random entre 1 y 24 que son las provincias que tenemos
-    5- Para obtener IDs correctos de las infracciones debemos acceder al archivo "procesados" y obtener
-    el último id y empezar a contar a partir de ahi ( cuidado aca tiene que estar ordenado por los ID )
-    5- Todo esto lo vamos a hacer en memoria y luego pasarlos a un archivo.
-    */
 }
 
 void mostrarConductor(Conductor conductor)
@@ -425,6 +413,53 @@ void llenar_struct_infraccion(Infraccion &infra,char fecha[],int infra_id,float 
     return;
 }
 
+void agregar_infraccion()
+{
+    Infraccion h;
+
+    cout << "Ingrese Infraccion ID:" << endl;
+    cin >> h.infraccionId;
+    cout << "Ingrese Fecha y hora (AAAAMMDDHH:MM):" << endl;
+    cin >> h.fechaHora;
+    cout << "Ingrese monto a abonar:" << endl;
+    cin >> h.monto;
+    cout << "Ingrese Conductor ID:" << endl;
+    cin >> h.conductorId;
+    cout << "Ingrese provincia:" << endl;
+    cin >> h.provincia;
+
+    FILE *f;
+    f= fopen("procesados.bin","a");
+    fwrite(&h,sizeof(Infraccion),1,f);
+    fclose(f);
+    return;
+}
+
+void generarInfraccionesRandom(int cantidadInfracciones)
+{
+    /*
+    Okey, para generar infracciones random tenemos un tema, basicamente
+    necesitamos todos los ID de conductores que ya existan en el archivo
+    ya que en caso contrario se podrian generar infracciones para
+    conductores que no existen.
+    "Solo necesitamos saber el ultimo y el primero, asi podemos crear infracciones para IDs
+    en ese rango."
+    Por ende la secuencia de pasos a seguir para generar infracciones random va a ser:
+    1- Obtener un array con todos los ID de conductores que tengamos, dado que nunca vamos
+    a saber cuantos conductores vamos a tener vamos a utilizar una LSE.
+    "1- Nada"
+    2- Para la fecha hora vamos a randomear solo los meses,dias y año, ya que es el dato por el
+    cual vamos a filtrar en un futuro. Hora y minutos lo vamos a dejar estatico.
+    3- Para el monto simple, vamos a generar un random entre 1000,00 y 100000,99
+    4- Para la provincia vamos a tirar un random entre 1 y 24 que son las provincias que tenemos
+    5- Para obtener IDs correctos de las infracciones debemos acceder al archivo "procesados.bin"
+    y obtener el último id y empezar a contar a partir de ahi.
+    ( cuidado aca tiene que estar ordenado por los ID )
+    5- Todo esto lo vamos a hacer en memoria y luego pasarlos a un archivo.
+    "5- Una vez actualizada la lista, se carga en un archivo."
+    */
+}
+
 // MOSTRAR INFRACCIONES CON UNA CONDICION
 
 void mostar_infra_de_conductor(NodoInfraccion *listainfracciones)
@@ -515,7 +550,8 @@ void cargar_infracciones_en_memoria_ordena_conducID(NodoInfraccion *&listainfrac
         fclose(f);
     }
     else
-    {   // Crea el archivo y se va porq entonces no hay infracciones para cargar
+    {   // Crea el archivo y se va porq entonces no hay
+        // infracciones para cargar
         f=fopen("procesados.bin","wb");
         fclose(f);
     }
@@ -652,19 +688,18 @@ void ingresar_ordenadamente_por_infraccionID(NodoInfraccion *&lista,Infraccion t
 
 // POP LISTA DE INFRACCIONES
 
-int pop_nodoInfraccion(NodoInfraccion *&listainfracciones)
+void borrar_lista_infracciones(NodoInfraccion *&lista)
 {
-        int elemento;
-        NodoInfraccion *paux;
-        paux= listainfracciones;
+
+    NodoInfraccion *paux;
+    while (lista!=NULL) // mientras queden nodos
+    {
+        paux= lista;
         while (paux && paux->next)
-        {   // necesita guardar el ultimo
-            paux= paux->next;
-        }
-        if (paux) // = (paux!=NULL)
+            paux= paux->next; // obtiene el ultimo nodo
+        if (paux) // paux!=NULL
         {
-            elemento = paux->infraccion.infraccionId;
-            if (paux->previous!=NULL)
+            if (paux->previous!=NULL) // si quedan nodos atras
             {
                 paux->previous->next=NULL;
                 delete paux;
@@ -672,13 +707,45 @@ int pop_nodoInfraccion(NodoInfraccion *&listainfracciones)
             else
             {
                 delete paux;
-                listainfracciones =NULL; // termina de desarmar la pila
-
+                lista =NULL;
             }
-            return elemento; // muestra el elemento que saco
         }
-        else
-            return 0;
+    }
+    return;
+}
+
+
+
+// ARCHIVOS E INFRACCIONES
+
+void actualizar_archivo_procesados(NodoInfraccion *listaInfracciones)
+{
+    // Para actualizarlo, lo sobreescribe cargandolo con la lista.
+    FILE *f;
+    f= fopen("procesados.bin","wb");
+    while (listaInfracciones)
+    {
+        fwrite(&listaInfracciones->infraccion,sizeof(Infraccion),1,f);
+        listaInfracciones=listaInfracciones->next;
+    }
+    fclose(f);
+    return;
+}
+
+void procesar_lote_de_infracciones(NodoInfraccion *&listainfraccines)
+{
+    char nombre[50];
+    FILE *f;
+    Infraccion infra;
+    cout << "Ingrese nombre del archivo:" << endl;
+    cin.getline(nombre,50,'\n');
+    f=fopen(nombre,"wb");
+    /// CARGA EL ARCHIVO CON INFRACCIONES RANDOM
+    fseek(f,0,SEEK_SET);
+    while (fread(&infra,sizeof(Infraccion),1,f))
+        ingresar_ordenadamente_por_conducID(listainfraccines,infra);
+    fclose(f);
+    return;
 }
 
 /**** FIN SUBPROGRAMAS DE INFRACCIONES ****/
@@ -689,6 +756,12 @@ int pop_nodoInfraccion(NodoInfraccion *&listainfracciones)
 void exportarHTML(NodoConductor *listaConductores)
 {
     NodoConductor *paux = listaConductores;
+
+    int fecha1, fecha2;
+    cout << "Ingrese la primera fecha entre las que quiere exportar: " << endl;
+    cin >> fecha1;
+    cout << "Ingrese la segunda fecha: " << endl;
+    cin >> fecha2;
 
     FILE *f;
     f = fopen("vencidos.html", "wt");
@@ -710,17 +783,37 @@ void exportarHTML(NodoConductor *listaConductores)
     fprintf(f, "<th style='padding: 10px; background-color: #94CBFF;'>Total de infracciones</th>\n");
     fprintf(f, "<th style='padding: 10px; background-color: #94CBFF;'>Email</th>\n");
 
-    //Imprime las filas si la fecha de vencimiento se paso de la actual
-    //no se como se determina la fecha actual, si es por input o system.
-    while(paux)
+
+    if(fecha1!=fecha2)
     {
-        if(paux->conductor.fechaVencimiento > 20211012)
+        while(paux)
         {
-            fprintf(f, "<tr>\n");
-            fprintf(f, "<td>%d</td> <td>%d</td> <td>%d</td> <td>%s</td>\n", paux->conductor.conductorId, paux->conductor.fechaVencimiento, paux->conductor.totalInfracciones, paux->conductor.email);
-            fprintf(f, "</tr>\n");
+            if(fecha1 > fecha2)
+            {
+                if((paux->conductor.fechaVencimiento < fecha1) && (paux->conductor.fechaVencimiento > fecha2))
+                {
+                    fprintf(f, "<tr>\n");
+                    fprintf(f, "<td>%d</td> <td>%d</td> <td>%d</td> <td>%s</td>\n", paux->conductor.conductorId, paux->conductor.fechaVencimiento, paux->conductor.totalInfracciones, paux->conductor.email);
+                    fprintf(f, "</tr>\n");
+                }
+            }
+            else
+            {
+                if((paux->conductor.fechaVencimiento < fecha2) && (paux->conductor.fechaVencimiento > fecha1))
+                {
+                    fprintf(f, "<tr>\n");
+                    fprintf(f, "<td>%d</td> <td>%d</td> <td>%d</td> <td>%s</td>\n", paux->conductor.conductorId, paux->conductor.fechaVencimiento, paux->conductor.totalInfracciones, paux->conductor.email);
+                    fprintf(f, "</tr>\n");
+                }
+            }
+            paux = paux->next;
         }
-        paux = paux->next;
+    }
+    else
+    {
+        cout << "Error: Ingreso dos fechas iguales" << endl;
+        fclose(f);
+        return;
     }
 
     fprintf(f, "</table>\n"); //cierra etiqueta title
@@ -733,6 +826,7 @@ void exportarHTML(NodoConductor *listaConductores)
     cout << "El archivo HTML fue exportado correctamente" << endl;
     cout << "" << endl;
 
+
     return;
 }
 
@@ -740,18 +834,50 @@ void exportarCSV(NodoConductor *listaConductores)
 {
     NodoConductor *paux = listaConductores;
 
+    int fecha1, fecha2;
+    cout << "Ingrese la primera fecha entre las que quiere exportar: " << endl;
+    cin >> fecha1;
+    cout << "Ingrese la segunda fecha: " << endl;
+    cin >> fecha2;
+
     FILE *f;
     f = fopen("vencidos.csv", "wt");
     fprintf(f, "Id del conductor;Fecha de vencimiento;Total de Infracciones;Email del conductor\n");
-    while(paux)
+
+
+    if(fecha1!=fecha2)
     {
-        if(paux->conductor.fechaVencimiento > 20211012)
+        while(paux)
         {
-            fprintf(f, "%d;%d;%d;%s\n", paux->conductor.conductorId, paux->conductor.fechaVencimiento, paux->conductor.totalInfracciones, paux->conductor.email);
+            if(fecha1 > fecha2)
+            {
+                if((paux->conductor.fechaVencimiento < fecha1) && (paux->conductor.fechaVencimiento > fecha2))
+                {
+                    fprintf(f, "%d;%d;%d;%s\n", paux->conductor.conductorId, paux->conductor.fechaVencimiento, paux->conductor.totalInfracciones, paux->conductor.email);
+                }
+            }
+            else
+            {
+                if((paux->conductor.fechaVencimiento < fecha2) && (paux->conductor.fechaVencimiento > fecha1))
+                {
+                    fprintf(f, "%d;%d;%d;%s\n", paux->conductor.conductorId, paux->conductor.fechaVencimiento, paux->conductor.totalInfracciones, paux->conductor.email);
+                }
+            }
+            paux = paux->next;
         }
-        paux = paux->next;
     }
+    else
+    {
+        cout << "Error: Ingreso dos fechas iguales" << endl;
+        fclose(f);
+        return;
+    }
+
     fclose(f);
+
+    cout << "" << endl;
+    cout << "El archivo CSV fue exportado correctamente" << endl;
+    cout << "" << endl;
     return;
 }
 
