@@ -144,6 +144,7 @@ int main()
             exportarHTML(listaConductores);
             break;
         case 8:
+            exportarCSV(listaconductores);
             break;
         case 9:
             finalizar_jornada(listaInfracciones,listaConductores);
