@@ -4,6 +4,15 @@
 #include <cstring>
 #include <locale.h>
 
+#ifdef _WIN32
+    #define limpiarConsola system("cls");
+#endif // WINDOWS
+
+
+#ifdef _linux_
+    #define limpiarConsola system("clear");
+#endif // LINUX
+
 using namespace std;
 
 /**** DECLARACIONES DE CONSTANTES ****/
@@ -89,9 +98,7 @@ void actualizar_archivo_procesados(NodoInfraccion *listaInfracciones);
 void exportarHTML(NodoConductor *listaConductores);
 void exportarCSV(NodoConductor *listaConductores);
 
-
 //Ayudines
-void limpiarConsola();
 int generarNumeroEnteroRandom(int min , int max);
 float generarNumeroDecimalRandom(float min , float max);
 
@@ -144,7 +151,7 @@ int main()
             exportarHTML(listaConductores);
             break;
         case 8:
-            exportarCSV(listaconductores);
+            exportarCSV(listaConductores);
             break;
         case 9:
             finalizar_jornada(listaInfracciones,listaConductores);
@@ -354,7 +361,7 @@ void agregarConductorAlArchivo(Conductor conductor)
 
     fclose(f);
 
-    limpiarConsola();
+    limpiarConsola;
 
     cout << "El conductor con ID: " << conductor.conductorId << ". Fue guardado exitosamente en el archivo" << endl;
 }
@@ -381,12 +388,6 @@ void cargarConductoresEnMemoria(NodoConductor *&listaConductores)
 
     fclose(f);
 }
-
-void limpiarConsola()
-{
-    system("clear"); //Si estan usando windows creo que aca hay que poner "cls"
-}
-
 
 /**** FIN SUBPROGRAMAS DE CONDUCTORES ****/
 
