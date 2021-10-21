@@ -4,10 +4,10 @@
 #include <cstring>
 #include <locale.h>
 
+/*** LIMPIAR CONSOLA ***/
 #ifdef _WIN32
     #define limpiarConsola system("cls");
 #endif // WINDOWS
-
 
 #ifdef _linux_
     #define limpiarConsola system("clear");
@@ -16,6 +16,7 @@
 #ifdef __APPLE__
     #define limpiarConsola system("clear");
 #endif // APPLE
+/*** FIN LIMPIAR CONSOLA ***/
 
 using namespace std;
 
@@ -68,7 +69,7 @@ void mostrarConductor(Conductor conductor);
 void mostrar_informe(NodoInfraccion *listainfracciones, NodoConductor *listaconductores);
 
 //Listas conductores
-void cargarConductoresEnMemoria(NodoConductor *&listaConductores); //Esta funci贸n genera una lista SE de conductores
+void cargarConductoresEnMemoria(NodoConductor *&listaConductores); //Esta funci髇 genera una lista SE de conductores
 
 //CRUD Listas conductores
 void insertarConductorAlFinal(NodoConductor *&listaConductores, Conductor conductor);
@@ -187,7 +188,7 @@ void mostrarMenu(int &opcionMenu)
 
     cout << "**************************************************" << endl;
     cout << "Bienvenido al sistema de infracciones de Gobierno Nacional" << endl;
-    cout << "Por favor seleccione una opci贸n: " << endl;
+    cout << "Por favor seleccione una opci髇: " << endl;
     cout << "1 - Cargar un nuevo conductor" << endl;
     cout << "2 - Listar todos los conductores" << endl;
     cout << "3 - Desactivar un conductor" << endl;
@@ -197,7 +198,7 @@ void mostrarMenu(int &opcionMenu)
     cout << "7 - Exportar informe HTML por conductor entre fechas de registro vencido" << endl;
     cout << "8 - Exportar informe CSV  por conductor entre fechas de registro vencido" << endl;
     cout << "9 - Finalizar la jornada" << endl;
-    cout << "10 - Generar infracciones aleatorias para los conductores existentes" << endl; 
+    cout << "10 - Generar infracciones aleatorias para los conductores existentes" << endl;
     cout << "0 - Salir del programa" << endl;
     cout << "**************************************************" << endl;
 
@@ -241,7 +242,7 @@ void mostrarConductor(Conductor conductor)
 {
     cout << "-----------------------------------------------------------------" << endl;
 
-    cout << "Informaci贸n acerca del conductor con ID: " << conductor.conductorId << endl;
+    cout << "Informaci髇 acerca del conductor con ID: " << conductor.conductorId << endl;
 
     cout << "Email: " << conductor.email << endl;
 
@@ -277,12 +278,21 @@ void desactivarConductor(NodoConductor *listaConductores ,  int conductorId)
     6 - Cerramos el archivo
     7 - Devolvemos el conductor para que se actualice en la lista
     */
+    //Guardamos el inicio de la lista
+    NodoConductor *aux = listaConductores;
+    if(!aux)
+    {
+        limpiarConsola;
+        cout << "Error: No existe el archivo Conductores.bin \n" << endl;
+        return;
+    }
+
     FILE *f;
     Conductor conductor;
     int posicionConductor = 0;
 
-    //Guardamos el inicio de la lista
-    NodoConductor *aux = listaConductores;
+
+
     while(aux)
     {
         if(aux->conductor.conductorId == conductorId){
@@ -328,6 +338,14 @@ void desactivarConductor(NodoConductor *listaConductores ,  int conductorId)
 void listarTodosLosConductores(NodoConductor *listaConductores)
 {
     NodoConductor *paux = listaConductores;
+
+    //Validacion para verificar que exista la lista de Conductores.
+    if(!paux)
+    {
+        limpiarConsola;
+        cout << "Error: No existe el archivo Conductores.bin \n" << endl;
+        return;
+    }
 
     while(paux)
     {
@@ -457,12 +475,12 @@ void generarInfraccionesRandom(NodoConductor *conductores, NodoInfraccion *infra
    NodoInfraccion *paux_infraccion = infracciones;
    Infraccion nueva_infraccion;
    int cantidadConductores = 0;
-   int id_infraccion = 1; 
+   int id_infraccion = 1;
    int numRandom,diasRandom,mesesRandom,anoRandom, provincia, conductorId;
    char hora[] = "23:23";
    char fecha[8];
    char fechaHora[13];
-   float monto; 
+   float monto;
 
    remove("infracciones.bin");
 
@@ -526,13 +544,22 @@ void mostar_infra_de_conductor(NodoInfraccion *listainfracciones)
     return;
 }
 
-void mostrar_infractores_de_una_provincia(NodoInfraccion *listainfracciones)
+void mostrar_infractores_de_una_provincia(NodoInfraccion *listaInfracciones)
 {
     // RECIBE LA LISTA ORDENADA POR CONDUCTOR ID
     int prov_a_buscar = -1;
     int id_anterior=-1;
-    NodoInfraccion *paux=listainfracciones;
-    //Validaci贸n solo para verificar que ingrese un n煤mero correcto
+    NodoInfraccion *paux=listaInfracciones;
+
+    //Validacion para verificar que exista la lista de infracciones
+    /*if(!paux)
+    {
+        limpiarConsola;
+        cout << "Error: No hay infracciones cargadas. \n" << endl;
+        return;
+    }*/
+
+    //Validaci髇 solo para verificar que ingrese un n鷐ero correcto
     while (prov_a_buscar < 1 || prov_a_buscar > 24)
     {
         cout << "Ingrese provincia de la que quiera ver sus infractores (1-24): " << endl;
@@ -822,6 +849,14 @@ void exportarHTML(NodoConductor *listaConductores)
 {
     NodoConductor *paux = listaConductores;
 
+    //Validacion para verificar que exista la lista de Conductores.
+    if(!paux)
+    {
+        limpiarConsola;
+        cout << "Error: No hay conductores cargados. \n" << endl;
+        return;
+    }
+
     int fecha1, fecha2;
     cout << "Ingrese la primera fecha entre las que quiere exportar: " << endl;
     cin >> fecha1;
@@ -847,7 +882,6 @@ void exportarHTML(NodoConductor *listaConductores)
     fprintf(f, "<th style='padding: 10px; background-color: #94CBFF;'>Fecha del Vencimiento</th>\n");
     fprintf(f, "<th style='padding: 10px; background-color: #94CBFF;'>Total de infracciones</th>\n");
     fprintf(f, "<th style='padding: 10px; background-color: #94CBFF;'>Email</th>\n");
-
 
     if(fecha1!=fecha2)
     {
@@ -898,6 +932,14 @@ void exportarHTML(NodoConductor *listaConductores)
 void exportarCSV(NodoConductor *listaConductores)
 {
     NodoConductor *paux = listaConductores;
+
+    //Validacion para verificar que exista la lista de Conductores.
+    if(!paux)
+    {
+        limpiarConsola;
+        cout << "Error: No hay conductores cargados \n" << endl;
+        return;
+    }
 
     int fecha1, fecha2;
     cout << "Ingrese la primera fecha entre las que quiere exportar: " << endl;
