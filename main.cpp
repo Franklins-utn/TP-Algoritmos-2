@@ -13,6 +13,10 @@
     #define limpiarConsola system("clear");
 #endif // LINUX
 
+#ifdef __APPLE__
+    #define limpiarConsola system("clear");
+#endif // APPLE
+
 using namespace std;
 
 /**** DECLARACIONES DE CONSTANTES ****/
@@ -82,8 +86,9 @@ void llenar_struct_infraccion(Infraccion &infra,char fecha[],int infra_id,float 
 void mostrar_infra(Infraccion infra);
 
 //Generar infracciones
-void generarInfraccionesRandom( int cantidadInfracciones);
+void generarInfraccionesRandom(NodoConductor *conductores, NodoInfraccion *infracciones ,  int cantidadInfracciones);
 void agregar_infraccion();
+void ingresarInfraccionAlArchivo(Infraccion infraccion);
 
 //Listas Infracciones
 void cargar_infracciones_en_memoria_ordena_infraID(NodoInfraccion *&listainfracciones);
@@ -100,7 +105,6 @@ void exportarCSV(NodoConductor *listaConductores);
 
 //Ayudines
 int generarNumeroEnteroRandom(int min , int max);
-float generarNumeroDecimalRandom(float min , float max);
 
 
 /**** FIN DECLARACIONES DE FUNCIONES ****/
@@ -112,7 +116,7 @@ int main()
     int opcionMenu;
     int conductorId;
     int totalConductores = 0;
-    int cantidadRandomInfracciones;
+    int cantidadRandomInfracciones = 0;
     NodoConductor *listaConductores = NULL;
     NodoInfraccion *listaInfracciones = NULL;
 
@@ -156,6 +160,15 @@ int main()
         case 9:
             finalizar_jornada(listaInfracciones,listaConductores);
             break;
+        case 10:
+            while (cantidadRandomInfracciones <= 0)
+            {
+                cout << "Ingrese una cantidad de infracciones aleatorias a generar: " << endl;
+                cin >> cantidadRandomInfracciones;
+            }
+
+            generarInfraccionesRandom(listaConductores , listaInfracciones , cantidadRandomInfracciones);
+
         default:
             break;
         }
@@ -184,6 +197,7 @@ void mostrarMenu(int &opcionMenu)
     cout << "7 - Exportar informe HTML por conductor entre fechas de registro vencido" << endl;
     cout << "8 - Exportar informe CSV  por conductor entre fechas de registro vencido" << endl;
     cout << "9 - Finalizar la jornada" << endl;
+    cout << "10 - Generar infracciones aleatorias para los conductores existentes" << endl; 
     cout << "0 - Salir del programa" << endl;
     cout << "**************************************************" << endl;
 
@@ -300,7 +314,7 @@ void desactivarConductor(NodoConductor *listaConductores ,  int conductorId)
 
     /*
     esto es tremendo, basicamente lo que pasa aca es que para escribir en la posicion deseada
-    hay que restarle a la posicion donde esta el struct guardado el tama�o del propio struct
+    hay que restarle a la posicion donde esta el struct guardado el tamano del propio struct
     para que edite justo esa linea.
     */
     fseek( f , posicionConductor - sizeof(Conductor) , SEEK_SET );
@@ -437,29 +451,59 @@ void agregar_infraccion()
     return;
 }
 
-void generarInfraccionesRandom(int cantidadInfracciones)
+void generarInfraccionesRandom(NodoConductor *conductores, NodoInfraccion *infracciones ,  int cantidadInfracciones)
 {
-    /*
-    Okey, para generar infracciones random tenemos un tema, basicamente
-    necesitamos todos los ID de conductores que ya existan en el archivo
-    ya que en caso contrario se podrian generar infracciones para
-    conductores que no existen.
-    "Solo necesitamos saber el ultimo y el primero, asi podemos crear infracciones para IDs
-    en ese rango."
-    Por ende la secuencia de pasos a seguir para generar infracciones random va a ser:
-    1- Obtener un array con todos los ID de conductores que tengamos, dado que nunca vamos
-    a saber cuantos conductores vamos a tener vamos a utilizar una LSE.
-    "1- Nada"
-    2- Para la fecha hora vamos a randomear solo los meses,dias y año, ya que es el dato por el
-    cual vamos a filtrar en un futuro. Hora y minutos lo vamos a dejar estatico.
-    3- Para el monto simple, vamos a generar un random entre 1000,00 y 100000,99
-    4- Para la provincia vamos a tirar un random entre 1 y 24 que son las provincias que tenemos
-    5- Para obtener IDs correctos de las infracciones debemos acceder al archivo "procesados.bin"
-    y obtener el último id y empezar a contar a partir de ahi.
-    ( cuidado aca tiene que estar ordenado por los ID )
-    5- Todo esto lo vamos a hacer en memoria y luego pasarlos a un archivo.
-    "5- Una vez actualizada la lista, se carga en un archivo."
-    */
+   NodoConductor *paux_conductor =  conductores;
+   NodoInfraccion *paux_infraccion = infracciones;
+   Infraccion nueva_infraccion;
+   int cantidadConductores = 0;
+   int id_infraccion = 1; 
+   int numRandom,diasRandom,mesesRandom,anoRandom, provincia, conductorId;
+   char hora[] = "23:23";
+   char fecha[8];
+   char fechaHora[13];
+   float monto; 
+
+   remove("infracciones.bin");
+
+   while(paux_conductor)
+   {
+       cantidadConductores++;
+       paux_conductor = paux_conductor->next;
+   }
+
+   while(paux_infraccion)
+   {
+       id_infraccion = paux_infraccion->infraccion.infraccionId;
+       paux_infraccion = paux_infraccion->next;
+   }
+
+   for (int i = 0; i < cantidadInfracciones; i++)
+   {
+        numRandom = generarNumeroEnteroRandom( 1 , cantidadConductores );
+        diasRandom = generarNumeroEnteroRandom( 1 , 28 ); //28 Para que no exista un 30 de febrero o un 31 de septiembre
+        mesesRandom = generarNumeroEnteroRandom( 1 , 12 );
+        conductorId = generarNumeroEnteroRandom( 1 , cantidadConductores);
+        anoRandom = generarNumeroEnteroRandom( 1998 , 2021 );
+        monto = generarNumeroEnteroRandom( 10000 , 100000 );
+        provincia = generarNumeroEnteroRandom(1 ,  24);
+        strcpy(fechaHora , "");
+
+        nueva_infraccion.infraccionId = id_infraccion;
+        nueva_infraccion.conductorId = conductorId;
+        nueva_infraccion.monto = monto;
+        nueva_infraccion.provincia = provincia;
+
+        sprintf(fecha , "%d%d%d" , anoRandom, mesesRandom , diasRandom);
+        strcat(fechaHora , fecha);
+        strcat(fechaHora , hora);
+
+        strcpy(nueva_infraccion.fechaHora , fechaHora);
+
+        ingresarInfraccionAlArchivo(nueva_infraccion);
+
+        id_infraccion++;
+   }
 }
 
 // MOSTRAR INFRACCIONES CON UNA CONDICION
@@ -719,6 +763,25 @@ void borrar_lista_infracciones(NodoInfraccion *&lista)
 
 
 // ARCHIVOS E INFRACCIONES
+void ingresarInfraccionAlArchivo(Infraccion infraccion)
+{
+    FILE *f;
+
+    f = fopen("infracciones.bin", "a");
+
+    fwrite(&infraccion, sizeof(Infraccion), 1, f);
+
+    cout << "---------------------------------------------------------------------------------" << endl;
+    cout << "La infraccion con la siguiente informacion fue guardada correctamente: " << endl;
+    cout << "id: " << infraccion.infraccionId << endl;
+    cout << "conductorID: " << infraccion.conductorId << endl;
+    cout << "monto: " << infraccion.monto << endl;
+    cout << "Fecha y hora: " << infraccion.fechaHora << endl;
+    cout << "provincia: " << infraccion.provincia << endl;
+    cout << "---------------------------------------------------------------------------------" << endl;
+
+    fclose(f);
+}
 
 void actualizar_archivo_procesados(NodoInfraccion *listaInfracciones)
 {
@@ -795,7 +858,7 @@ void exportarHTML(NodoConductor *listaConductores)
                 if((paux->conductor.fechaVencimiento < fecha1) && (paux->conductor.fechaVencimiento > fecha2))
                 {
                     fprintf(f, "<tr>\n");
-                    fprintf(f, "<td>%d</td> <td>%d</td> <td>%d</td> <td>%s</td>\n", paux->conductor.conductorId, paux->conductor.fechaVencimiento, paux->conductor.totalInfracciones, paux->conductor.email);
+                    fprintf(f, "<td>%d</td> <td>%ld</td> <td>%d</td> <td>%s</td>\n", paux->conductor.conductorId, paux->conductor.fechaVencimiento, paux->conductor.totalInfracciones, paux->conductor.email);
                     fprintf(f, "</tr>\n");
                 }
             }
@@ -804,7 +867,7 @@ void exportarHTML(NodoConductor *listaConductores)
                 if((paux->conductor.fechaVencimiento < fecha2) && (paux->conductor.fechaVencimiento > fecha1))
                 {
                     fprintf(f, "<tr>\n");
-                    fprintf(f, "<td>%d</td> <td>%d</td> <td>%d</td> <td>%s</td>\n", paux->conductor.conductorId, paux->conductor.fechaVencimiento, paux->conductor.totalInfracciones, paux->conductor.email);
+                    fprintf(f, "<td>%d</td> <td>%ld</td> <td>%d</td> <td>%s</td>\n", paux->conductor.conductorId, paux->conductor.fechaVencimiento, paux->conductor.totalInfracciones, paux->conductor.email);
                     fprintf(f, "</tr>\n");
                 }
             }
@@ -855,14 +918,14 @@ void exportarCSV(NodoConductor *listaConductores)
             {
                 if((paux->conductor.fechaVencimiento < fecha1) && (paux->conductor.fechaVencimiento > fecha2))
                 {
-                    fprintf(f, "%d;%d;%d;%s\n", paux->conductor.conductorId, paux->conductor.fechaVencimiento, paux->conductor.totalInfracciones, paux->conductor.email);
+                    fprintf(f, "%d;%ld;%d;%s\n", paux->conductor.conductorId, paux->conductor.fechaVencimiento, paux->conductor.totalInfracciones, paux->conductor.email);
                 }
             }
             else
             {
                 if((paux->conductor.fechaVencimiento < fecha2) && (paux->conductor.fechaVencimiento > fecha1))
                 {
-                    fprintf(f, "%d;%d;%d;%s\n", paux->conductor.conductorId, paux->conductor.fechaVencimiento, paux->conductor.totalInfracciones, paux->conductor.email);
+                    fprintf(f, "%d;%ld;%d;%s\n", paux->conductor.conductorId, paux->conductor.fechaVencimiento, paux->conductor.totalInfracciones, paux->conductor.email);
                 }
             }
             paux = paux->next;
@@ -885,3 +948,9 @@ void exportarCSV(NodoConductor *listaConductores)
 
 /**** FIN SUBPROGRAMAS PARA EXPORTAR ****/
 
+/** AYUDINES **/
+
+int generarNumeroEnteroRandom(int min , int max)
+{
+    return min + rand() % (max+1 - min);
+}
