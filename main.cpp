@@ -251,7 +251,6 @@ void mostrarConductor(Conductor conductor)
     cout << "Fecha de vencimiento: " << conductor.fechaVencimiento << endl;
 
     cout << "Activo: " << conductor.activo << endl;
-    ;
 
     cout << "Total infracciones: " << conductor.totalInfracciones << endl;
 
@@ -271,6 +270,7 @@ NodoConductor *obtenerUltimoConductor(NodoConductor *listaConductores)
 void actualizarTotalinfraccionesArchivo(NodoConductor *listaConductores, int conductorId, int totalInfracciones)
 {
     NodoConductor *aux = listaConductores;
+
     if (!aux)
     {
         limpiarConsola;
@@ -285,34 +285,18 @@ void actualizarTotalinfraccionesArchivo(NodoConductor *listaConductores, int con
 
     f = fopen("conductores.bin", "rb+");
 
+    fseek(f , 0 , SEEK_SET);
+
     while (fread(&conductor, sizeof(Conductor), 1, f) == 1)
     {
         if (conductor.conductorId == conductorId)
         {
-            posicionConductor = ftell(f);
+            fseek(f,  sizeof(Conductor) * (-1), SEEK_CUR);
+            conductor.totalInfracciones = totalInfracciones;
+            fwrite(&conductor, sizeof(Conductor),1, f);
+            fseek(f,  0, SEEK_CUR);//patch
         }
     }
-
-    if (posicionConductor == 0)
-    {
-        cout << "No existe el conductor en nuestra base de datos" << endl;
-        return;
-    }
-
-    fseek(f, posicionConductor, SEEK_SET);
-
-    fread(&conductor, sizeof(Conductor), 1, f);
-
-    conductor.totalInfracciones = totalInfracciones;
-
-    /*
-    esto es tremendo, basicamente lo que pasa aca es que para escribir en la posicion deseada
-    hay que restarle a la posicion donde esta el struct guardado el tamano del propio struct
-    para que edite justo esa linea.
-    */
-    fseek(f, posicionConductor - sizeof(Conductor), SEEK_SET);
-
-    fwrite(&conductor, sizeof(Conductor), 1, f);
 
     fclose(f);
 }
@@ -359,6 +343,10 @@ void desactivarConductor(NodoConductor *listaConductores, int conductorId)
     {
         if (conductor.conductorId == conductorId)
         {
+            fseek(f,  sizeof(Conductor) * (-1), SEEK_CUR);
+            conductor.activo = false;
+            fwrite(&conductor, sizeof(Conductor),1, f);
+            fseek(f,  0, SEEK_CUR);//patch
             posicionConductor = ftell(f);
         }
     }
@@ -368,21 +356,6 @@ void desactivarConductor(NodoConductor *listaConductores, int conductorId)
         cout << "No existe el conductor en nuestra base de datos" << endl;
         return;
     }
-
-    fseek(f, posicionConductor, SEEK_SET);
-
-    fread(&conductor, sizeof(Conductor), 1, f);
-
-    conductor.activo = false;
-
-    /*
-    esto es tremendo, basicamente lo que pasa aca es que para escribir en la posicion deseada
-    hay que restarle a la posicion donde esta el struct guardado el tamano del propio struct
-    para que edite justo esa linea.
-    */
-    fseek(f, posicionConductor - sizeof(Conductor), SEEK_SET);
-
-    fwrite(&conductor, sizeof(Conductor), 1, f);
 
     fclose(f);
 }
