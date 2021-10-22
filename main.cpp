@@ -1,3 +1,8 @@
+// Copyright 2021 Los pibes SA
+// Author: Luciano
+// Author: Franco
+// Author: Juan
+
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -88,16 +93,12 @@ void mostrar_infra(Infraccion infra);
 
 //Generar infracciones
 void generarInfraccionesRandom(NodoConductor *conductores, NodoInfraccion *&infracciones ,  int cantidadInfracciones);
-void ingresarInfraccionAlArchivo(Infraccion infraccion);
-void agregar_infraccion();
 
 //Listas Infracciones
-void cargar_infracciones_en_memoria_ordena_infraID(NodoInfraccion *&listainfracciones);
 void cargar_infracciones_en_memoria_ordena_conducID(NodoInfraccion *&listainfracciones);
 void ingresar_ordenadamente_por_conducID(NodoInfraccion *&lista,Infraccion ticket);
 void ingresar_ordenadamente_por_infraccionID(NodoInfraccion *&lista,Infraccion ticket);
 void borrar_lista_infracciones(NodoInfraccion *&lista);
-void procesar_lote_de_infracciones(NodoInfraccion *&listainfraccines);
 void actualizar_archivo_procesados(NodoInfraccion *listaInfracciones);
 
 //Archivos de texto
@@ -146,7 +147,12 @@ int main()
             mostrar_infractores_de_una_provincia(listaInfracciones);
             break;
         case 5:
-            procesar_lote_de_infracciones(listaInfracciones);
+            while (cantidadRandomInfracciones <= 0)
+            {
+                cout << "Ingrese una cantidad de infracciones aleatorias a generar: " << endl;
+                cin >> cantidadRandomInfracciones;
+            }
+            generarInfraccionesRandom(listaConductores , listaInfracciones , cantidadRandomInfracciones);
             break;
         case 6:
             mostrar_informe(listaInfracciones,listaConductores);
@@ -160,15 +166,6 @@ int main()
         case 9:
             finalizar_jornada(listaInfracciones,listaConductores);
             break;
-        case 10:
-            while (cantidadRandomInfracciones <= 0)
-            {
-                cout << "Ingrese una cantidad de infracciones aleatorias a generar: " << endl;
-                cin >> cantidadRandomInfracciones;
-            }
-
-            generarInfraccionesRandom(listaConductores , listaInfracciones , cantidadRandomInfracciones);
-
         default:
             break;
         }
@@ -187,7 +184,7 @@ void mostrarMenu(int &opcionMenu)
 
     cout << "**************************************************" << endl;
     cout << "Bienvenido al sistema de infracciones de Gobierno Nacional" << endl;
-    cout << "Por favor seleccione una opci�n: " << endl;
+    cout << "Por favor seleccione una opción: " << endl;
     cout << "1 - Cargar un nuevo conductor" << endl;
     cout << "2 - Listar todos los conductores" << endl;
     cout << "3 - Desactivar un conductor" << endl;
@@ -197,7 +194,6 @@ void mostrarMenu(int &opcionMenu)
     cout << "7 - Exportar informe HTML por conductor entre fechas de registro vencido" << endl;
     cout << "8 - Exportar informe CSV  por conductor entre fechas de registro vencido" << endl;
     cout << "9 - Finalizar la jornada" << endl;
-    cout << "10 - Generar infracciones aleatorias para los conductores existentes" << endl;
     cout << "0 - Salir del programa" << endl;
     cout << "**************************************************" << endl;
 
@@ -242,7 +238,7 @@ void mostrarConductor(Conductor conductor)
 {
     cout << "-----------------------------------------------------------------" << endl;
 
-    cout << "Informaci�n acerca del conductor con ID: " << conductor.conductorId << endl;
+    cout << "Información acerca del conductor con ID: " << conductor.conductorId << endl;
 
     cout << "Email: " << conductor.email << endl;
 
@@ -447,27 +443,6 @@ void llenar_struct_infraccion(Infraccion &infra,char fecha[],int infra_id,float 
     return;
 }
 
-void agregar_infraccion()
-{
-    Infraccion h;
-
-    cout << "Ingrese Infraccion ID:" << endl;
-    cin >> h.infraccionId;
-    cout << "Ingrese Fecha y hora (AAAAMMDDHH:MM):" << endl;
-    cin >> h.fechaHora;
-    cout << "Ingrese monto a abonar:" << endl;
-    cin >> h.monto;
-    cout << "Ingrese Conductor ID:" << endl;
-    cin >> h.conductorId;
-    cout << "Ingrese provincia:" << endl;
-    cin >> h.provincia;
-
-    FILE *f;
-    f= fopen("procesados.bin","a");
-    fwrite(&h,sizeof(Infraccion),1,f);
-    fclose(f);
-    return;
-}
 
 void generarInfraccionesRandom(NodoConductor *conductores, NodoInfraccion *&infracciones ,  int cantidadInfracciones)
 {
@@ -476,14 +451,24 @@ void generarInfraccionesRandom(NodoConductor *conductores, NodoInfraccion *&infr
    Infraccion nueva_infraccion;
    int cantidadConductores = 0;
    int id_infraccion = 1;
+   int maxInfraccionId = 1;
    int numRandom,diasRandom,mesesRandom,anoRandom, provincia, conductorId;
    char hora[] = "23:23";
    char fecha[8];
    char fechaHora[13];
    float monto;
-   int maxInfraccionId = 1;
 
-   remove("infracciones.bin");
+   FILE *f;
+
+   char nombre[50] = "";
+
+   while(strlen(nombre) == 0)
+   {
+       cout << "Ingrese nombre del archivo:" << endl;
+       cin >> nombre;
+   }
+
+   f = fopen(nombre,"a");
 
    while(paux_conductor)
    {
@@ -525,8 +510,18 @@ void generarInfraccionesRandom(NodoConductor *conductores, NodoInfraccion *&infr
 
         strcpy(nueva_infraccion.fechaHora , fechaHora);
 
-        ingresarInfraccionAlArchivo(nueva_infraccion);
-        ingresar_ordenadamente_por_infraccionID(infracciones , nueva_infraccion);
+        fwrite(&nueva_infraccion, sizeof(Infraccion), 1, f);
+
+        cout << "---------------------------------------------------------------------------------" << endl;
+        cout << "La infraccion con la siguiente informacion fue guardada correctamente: " << endl;
+        cout << "id: " << nueva_infraccion.infraccionId << endl;
+        cout << "conductorID: " << nueva_infraccion.conductorId << endl;
+        cout << "monto: " << nueva_infraccion.monto << endl;
+        cout << "Fecha y hora: " << nueva_infraccion.fechaHora << endl;
+        cout << "provincia: " << nueva_infraccion.provincia << endl;
+        cout << "---------------------------------------------------------------------------------" << endl;
+
+        ingresar_ordenadamente_por_conducID(infracciones , nueva_infraccion);
 
         id_infraccion++;
    }
@@ -568,7 +563,7 @@ void mostrar_infractores_de_una_provincia(NodoInfraccion *listaInfracciones)
         return;
     }*/
 
-    //Validaci�n solo para verificar que ingrese un n�mero correcto
+    //Validación solo para verificar que ingrese un n�mero correcto
     while (prov_a_buscar < 1 || prov_a_buscar > 24)
     {
         cout << "Ingrese provincia de la que quiera ver sus infractores (1-24): " << endl;
@@ -640,25 +635,6 @@ void cargar_infracciones_en_memoria_ordena_conducID(NodoInfraccion *&listainfrac
     return;
 }
 
-void cargar_infracciones_en_memoria_ordena_infraID(NodoInfraccion *&listainfracciones)
-{
-    FILE *f;
-    Infraccion infra;
-    f=fopen("procesados.bin","r");
-    if (f)
-    {
-        while (fread(&infra,sizeof(Infraccion),1,f))
-            ingresar_ordenadamente_por_infraccionID(listainfracciones,infra);
-        fclose(f);
-    }
-    else
-    {   // Crea el archivo y se va porq entonces no hay infracciones para cargar
-        f=fopen("procesados.bin","wb");
-        fclose(f);
-    }
-    return;
-}
-
 // INGRESAR ORDENADAMENTE
 
 void ingresar_ordenadamente_por_conducID(NodoInfraccion *&lista,Infraccion ticket)
@@ -720,7 +696,6 @@ void ingresar_ordenadamente_por_infraccionID(NodoInfraccion *&lista,Infraccion t
     NodoInfraccion *paux2=NULL;
     if (lista==NULL)
     {   /// crear el primer elemento
-        cout << "1" << endl;
         lista= new NodoInfraccion();
         lista->previous=NULL;
         lista->next=NULL;
@@ -797,27 +772,7 @@ void borrar_lista_infracciones(NodoInfraccion *&lista)
 }
 
 
-
 // ARCHIVOS E INFRACCIONES
-void ingresarInfraccionAlArchivo(Infraccion infraccion)
-{
-    FILE *f;
-
-    f = fopen("infracciones.bin", "a");
-
-    fwrite(&infraccion, sizeof(Infraccion), 1, f);
-
-    cout << "---------------------------------------------------------------------------------" << endl;
-    cout << "La infraccion con la siguiente informacion fue guardada correctamente: " << endl;
-    cout << "id: " << infraccion.infraccionId << endl;
-    cout << "conductorID: " << infraccion.conductorId << endl;
-    cout << "monto: " << infraccion.monto << endl;
-    cout << "Fecha y hora: " << infraccion.fechaHora << endl;
-    cout << "provincia: " << infraccion.provincia << endl;
-    cout << "---------------------------------------------------------------------------------" << endl;
-
-    fclose(f);
-}
 
 void actualizar_archivo_procesados(NodoInfraccion *listaInfracciones)
 {
@@ -830,31 +785,6 @@ void actualizar_archivo_procesados(NodoInfraccion *listaInfracciones)
         fwrite(&listaInfracciones->infraccion,sizeof(Infraccion),1,f);
         listaInfracciones=listaInfracciones->next;
     }
-    fclose(f);
-    return;
-}
-
-void procesar_lote_de_infracciones(NodoInfraccion *&listainfraccines)
-{
-    char nombre[50];
-    FILE *f;
-    Infraccion infra;
-    NodoInfraccion nuevasInfracciones;
-
-    cout << strlen(nombre) << endl;
-    while(strlen(nombre) == 0)
-    {
-        cout << "Ingrese nombre del archivo:" << endl;
-        cin >> nombre;
-    }
-
-    f=fopen(nombre,"wb");
-
-    /// CARGA EL ARCHIVO CON INFRACCIONES RANDOM
-    fseek(f,0,SEEK_SET);
-
-    while (fread(&infra,sizeof(Infraccion),1,f))
-        ingresar_ordenadamente_por_conducID(listainfraccines , infra);
     fclose(f);
     return;
 }
@@ -1010,7 +940,6 @@ void exportarCSV(NodoConductor *listaConductores)
 /**** FIN SUBPROGRAMAS PARA EXPORTAR ****/
 
 /** AYUDINES **/
-
 int generarNumeroEnteroRandom(int min , int max)
 {
     return min + rand() % (max+1 - min);
