@@ -563,7 +563,8 @@ void mostrar_infractores_de_una_provincia(NodoInfraccion *listaInfracciones)
         return;
     }*/
 
-    //Validación solo para verificar que ingrese un n�mero correcto
+
+    //Validación solo para verificar que ingrese un numero correcto
     while (prov_a_buscar < 1 || prov_a_buscar > 24)
     {
         cout << "Ingrese provincia de la que quiera ver sus infractores (1-24): " << endl;
@@ -573,6 +574,7 @@ void mostrar_infractores_de_una_provincia(NodoInfraccion *listaInfracciones)
     // Recorre la lista leyendo las infracciones
     while (paux)
     {
+        mostrar_infra(paux->infraccion);
         if(paux->infraccion.conductorId != id_anterior && paux->infraccion.provincia==prov_a_buscar)
             {
                 cout << "*ID del infractor: " << paux->infraccion.conductorId << endl;
