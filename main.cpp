@@ -72,7 +72,7 @@ void mostrarConductor(Conductor conductor);
 void mostrar_informe(NodoInfraccion *listainfracciones, NodoConductor *listaconductores);
 
 //Listas conductores
-void cargarConductoresEnMemoria(NodoConductor *&listaConductores); //Esta funci髇 genera una lista SE de conductores
+void cargarConductoresEnMemoria(NodoConductor *&listaConductores); //Esta funci贸n genera una lista SE de conductores
 
 //CRUD Listas conductores
 void insertarConductorAlFinal(NodoConductor *&listaConductores, Conductor conductor);
@@ -192,11 +192,11 @@ void mostrarMenu(int &opcionMenu)
 
     cout << "**************************************************" << endl;
     cout << "Bienvenido al sistema de infracciones de Gobierno Nacional" << endl;
-    cout << "Por favor seleccione una opci髇: " << endl;
+    cout << "Por favor seleccione una opci贸n: " << endl;
     cout << "1 - Cargar un nuevo conductor" << endl;
     cout << "2 - Listar todos los conductores" << endl;
     cout << "3 - Desactivar un conductor" << endl;
-    cout << "4 - Listar detalle de conductores por provincia" << endl;
+    cout << "4 - Mostrar infractores de una provincia" << endl;
     cout << "5 - Procesar lote de infracciones" << endl;
     cout << "6 - Mostrar informe de un conductor" << endl;
     cout << "7 - Exportar informe HTML por conductor entre fechas de registro vencido" << endl;
@@ -244,7 +244,7 @@ void mostrarConductor(Conductor conductor)
 {
     cout << "-----------------------------------------------------------------" << endl;
 
-    cout << "Informaci髇 acerca del conductor con ID: " << conductor.conductorId << endl;
+    cout << "Informaci贸n acerca del conductor con ID: " << conductor.conductorId << endl;
 
     cout << "Email: " << conductor.email << endl;
 
@@ -689,7 +689,7 @@ void mostrar_infractores_de_una_provincia(NodoInfraccion *listaInfracciones)
         return;
     }*/
 
-    //Validaci髇 solo para verificar que ingrese un numero correcto
+    //Validaci贸n solo para verificar que ingrese un numero correcto
     while (prov_a_buscar < 1 || prov_a_buscar > 24)
     {
         cout << "Ingrese provincia de la que quiera ver sus infractores (1-24): " << endl;
