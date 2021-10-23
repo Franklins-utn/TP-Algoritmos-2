@@ -63,7 +63,10 @@ struct NodoInfraccion
 /**** DECLARACIONES DE FUNCIONES ****/
 //Generales
 void mostrarMenu(int &opcionMenu);
-void procesar_lote(NodoInfraccion *listaInfracciones, NodoConductor *listaconductores);
+void procesar_lote(NodoInfraccion *&listaInfracciones, NodoConductor *listaconductores);
+void inicializar_archivo_infracciones(NodoConductor *listaconductores,NodoInfraccion *listainfracciones);
+void inicializar_archivo_conductores();
+void finalizar_jornada(NodoConductor *&listaconductores,NodoInfraccion *&listaInfracciones, long fechaActual);
 
 /** Conductores **/
 //Mostrar y llenar
@@ -72,16 +75,14 @@ void mostrarConductor(Conductor conductor);
 void mostrar_informe(NodoInfraccion *listainfracciones, NodoConductor *listaconductores);
 
 //Listas conductores
-void cargarConductoresEnMemoria(NodoConductor *&listaConductores); //Esta funci贸n genera una lista SE de conductores
+void cargarConductoresEnMemoria(NodoConductor *&listaConductores); //Esta funci髇 genera una lista SE de conductores
 
 //CRUD Listas conductores
 void insertarConductorAlFinal(NodoConductor *&listaConductores, Conductor conductor);
 void listarTodosLosConductores(NodoConductor *listaConductores);
 void desactivarConductor(NodoConductor *listaConductores, int conductorId);
 void actualizarTotalinfraccionesArchivo(NodoConductor *listaConductores, int conductorId, int totalInfracciones);
-void finalizar_jornada(NodoConductor *listaconductores);
 void borrar_lista_conductor(NodoConductor *&lista);
-void inicializar_archivo_conductores();
 void llenar_struct_conductor(Conductor &conduc,int conductorId,long fechaVencimiento,char email[]);
 Conductor crearNuevoConductor(NodoConductor *listaConductores);
 NodoConductor *obtenerUltimoConductor(NodoConductor *listaConductores);
@@ -101,16 +102,24 @@ void cargar_infracciones_en_memoria_ordena_conducID(NodoInfraccion *&listainfrac
 void ingresar_ordenadamente_por_conducID(NodoInfraccion *&lista, Infraccion ticket);
 void ingresar_ordenadamente_por_infraccionID(NodoInfraccion *&lista, Infraccion ticket);
 void borrar_lista_infracciones(NodoInfraccion *&lista);
-void actualizar_archivo_procesados(NodoInfraccion *listaInfracciones, NodoConductor *listaConductores);
 
 //Archivos de texto
 void exportarHTML(NodoConductor *listaConductores);
 void exportarCSV(NodoConductor *listaConductores);
 
+//Archivos
+void actualizar_archivo_conductores(NodoConductor *listaconductores,long fechaActual);
+void actualizar_archivo_procesados(NodoInfraccion *listaInfracciones);
+
 //Ayudines
 int generarNumeroEnteroRandom(int min, int max);
+void actualizarTotalinfracciones(NodoInfraccion *listaInfracciones, NodoConductor *listaConductores);
 
 /**** FIN DECLARACIONES DE FUNCIONES ****/
+
+
+void mostrar_lista(NodoInfraccion *listainfracciones);
+
 
 int main()
 {
@@ -123,11 +132,21 @@ int main()
     NodoInfraccion *listaInfracciones = NULL;
 
     inicializar_archivo_conductores();
+    inicializar_archivo_infracciones(listaConductores,listaInfracciones);
+
 
     cargarConductoresEnMemoria(listaConductores);
-
     cargar_infracciones_en_memoria_ordena_conducID(listaInfracciones);
 
+    actualizarTotalinfracciones(listaInfracciones,listaConductores);
+
+
+    long fechaActual;
+    /*
+    cout << "Ingrese fecha actual (AAAAMMDD):" << endl;
+    cin >> fechaActual;
+    */
+    fechaActual=20211022;
     mostrarMenu(opcionMenu);
 
     while (opcionMenu != 0)
@@ -150,14 +169,15 @@ int main()
             mostrar_infractores_de_una_provincia(listaInfracciones);
             break;
         case 5:
+            /**
             while (cantidadRandomInfracciones <= 0)
             {
                 cout << "Ingrese una cantidad de infracciones aleatorias a generar: " << endl;
                 cin >> cantidadRandomInfracciones;
             }
-            generarInfraccionesRandom(listaConductores, listaInfracciones, cantidadRandomInfracciones,true);
-            procesar_lote(listaInfracciones, listaConductores);
-            cantidadRandomInfracciones = 0;
+            **/
+            procesar_lote(listaInfracciones,listaConductores);
+            //cantidadRandomInfracciones = 0;
             break;
         case 6:
             mostrar_informe(listaInfracciones, listaConductores);
@@ -169,17 +189,16 @@ int main()
             exportarCSV(listaConductores);
             break;
         case 9:
-            finalizar_jornada(listaConductores);
-            borrar_lista_conductor(listaConductores);
-            borrar_lista_infracciones(listaInfracciones);
-            opcionMenu = 0;
+            finalizar_jornada(listaConductores,listaInfracciones,fechaActual);
+            opcionMenu= 0;
             break;
         default:
             break;
         }
         mostrarMenu(opcionMenu);
     }
-
+    borrar_lista_conductor(listaConductores);
+    borrar_lista_infracciones(listaInfracciones);
     cout << "\nEl programa ha finalizado." << endl;
     return 0;
 }
@@ -192,27 +211,26 @@ void mostrarMenu(int &opcionMenu)
 
     cout << "**************************************************" << endl;
     cout << "Bienvenido al sistema de infracciones de Gobierno Nacional" << endl;
-    cout << "Por favor seleccione una opci贸n: " << endl;
+    cout << "Por favor seleccione una opci髇: " << endl;
     cout << "1 - Cargar un nuevo conductor" << endl;
     cout << "2 - Listar todos los conductores" << endl;
     cout << "3 - Desactivar un conductor" << endl;
-    cout << "4 - Mostrar infractores de una provincia" << endl;
+    cout << "4 - Listar detalle de conductores por provincia" << endl;
     cout << "5 - Procesar lote de infracciones" << endl;
     cout << "6 - Mostrar informe de un conductor" << endl;
     cout << "7 - Exportar informe HTML por conductor entre fechas de registro vencido" << endl;
     cout << "8 - Exportar informe CSV  por conductor entre fechas de registro vencido" << endl;
-    cout << "9 - Finalizar la jornada" << endl;
+    cout << "9 - Finalizar la jornada y  salir del programa" << endl;
     cout << "0 - Salir del programa" << endl;
     cout << "**************************************************" << endl;
 
     cin >> opcionMenu;
 }
 
-void procesar_lote(NodoInfraccion *listaInfracciones, NodoConductor *listaconductores)
+void procesar_lote(NodoInfraccion *&listaInfracciones, NodoConductor *listaconductores)
 {
-    // Recibe todas las listas y actualiza los archivos
-    actualizar_archivo_procesados(listaInfracciones, listaconductores);
-
+    generarInfraccionesRandom(listaconductores,listaInfracciones,10,true);
+    actualizarTotalinfracciones(listaInfracciones,listaconductores);
     return;
 }
 
@@ -244,7 +262,7 @@ void mostrarConductor(Conductor conductor)
 {
     cout << "-----------------------------------------------------------------" << endl;
 
-    cout << "Informaci贸n acerca del conductor con ID: " << conductor.conductorId << endl;
+    cout << "Informaci髇 acerca del conductor con ID: " << conductor.conductorId << endl;
 
     cout << "Email: " << conductor.email << endl;
 
@@ -299,21 +317,11 @@ void actualizarTotalinfraccionesArchivo(NodoConductor *listaConductores, int con
     }
 
     fclose(f);
+    return;
 }
 
 void desactivarConductor(NodoConductor *listaConductores, int conductorId)
 {
-    /*
-    Para desactivar un conductor:
-    1 - Debemos mostrar una lista de los conductores existentes
-    2 - Debemos guardar el ingreso del conductorId
-    3 - Abrimos el archivo de conductores en modo rb+
-    4 - Buscamos el conductor por ID
-    5 - Actualizamos activo = false;
-    6 - Cerramos el archivo
-    7 - Devolvemos el conductor para que se actualice en la lista
-    */
-    //Guardamos el inicio de la lista
     NodoConductor *aux = listaConductores;
     if (!aux)
     {
@@ -322,10 +330,6 @@ void desactivarConductor(NodoConductor *listaConductores, int conductorId)
              << endl;
         return;
     }
-
-    FILE *f;
-    Conductor conductor;
-    int posicionConductor = 0;
 
     while (aux)
     {
@@ -336,28 +340,7 @@ void desactivarConductor(NodoConductor *listaConductores, int conductorId)
 
         aux = aux->next;
     }
-
-    f = fopen("conductores.bin", "rb+");
-
-    while (fread(&conductor, sizeof(Conductor), 1, f) == 1)
-    {
-        if (conductor.conductorId == conductorId)
-        {
-            fseek(f,  sizeof(Conductor) * (-1), SEEK_CUR);
-            conductor.activo = false;
-            fwrite(&conductor, sizeof(Conductor),1, f);
-            fseek(f,  0, SEEK_CUR);//patch
-            posicionConductor = ftell(f);
-        }
-    }
-
-    if (posicionConductor == 0)
-    {
-        cout << "No existe el conductor en nuestra base de datos" << endl;
-        return;
-    }
-
-    fclose(f);
+    return;
 }
 
 void listarTodosLosConductores(NodoConductor *listaConductores)
@@ -378,6 +361,41 @@ void listarTodosLosConductores(NodoConductor *listaConductores)
         mostrarConductor(paux->conductor);
         paux = paux->next;
     }
+    return;
+}
+
+void actualizarTotalinfracciones(NodoInfraccion *listaInfracciones, NodoConductor *listaConductores)
+{
+    int cantidadInfracciones = 0;
+    int id_conductor_anterior = -1;
+
+    while (listaInfracciones && listaConductores)
+        {
+            if (listaInfracciones->infraccion.conductorId != id_conductor_anterior)
+            {
+                if (cantidadInfracciones != 0)
+                {
+                    listaConductores->conductor.totalInfracciones = cantidadInfracciones;
+                    listaConductores = listaConductores->next;
+                }
+
+                id_conductor_anterior = listaInfracciones->infraccion.conductorId;
+                cantidadInfracciones = 1;
+            }
+            else
+            {
+                cantidadInfracciones++;
+            }
+
+            if (!listaInfracciones->next)
+            {
+                listaConductores->conductor.totalInfracciones = cantidadInfracciones;
+                listaConductores = listaConductores->next;
+            }
+
+            listaInfracciones = listaInfracciones->next;
+        }
+    return;
 }
 
 Conductor crearNuevoConductor(NodoConductor *listaConductores)
@@ -445,30 +463,17 @@ void cargarConductoresEnMemoria(NodoConductor *&listaConductores)
     }
 
     fclose(f);
+    return;
 }
 
-void finalizar_jornada(NodoConductor *listaconductores)
+void finalizar_jornada(NodoConductor *&listaConductores,NodoInfraccion *&listaInfracciones,long fechaActual)
 {
-    FILE *f;
-    f = fopen("conductores.bin", "wb");
-    int fechaActual;
-
-    while (fechaActual <= 0)
-    {
-        cout << "Ingresa una fecha:  " << endl;
-        cin >> fechaActual;
-    }
-
-    while (listaconductores)
-    {
-        if (listaconductores->conductor.fechaVencimiento > fechaActual && listaconductores->conductor.activo)
-        {
-            fwrite(&listaconductores->conductor, sizeof(Conductor), 1, f);
-        }
-
-        listaconductores = listaconductores->next;
-    }
-    fclose(f);
+    // Actualizar archivos y borrar listas.
+    actualizarTotalinfracciones(listaInfracciones,listaConductores);
+    actualizar_archivo_conductores(listaConductores,fechaActual);
+    actualizar_archivo_procesados(listaInfracciones);
+    borrar_lista_conductor(listaConductores);
+    borrar_lista_infracciones(listaInfracciones);
     return;
 }
 
@@ -532,23 +537,53 @@ void llenar_struct_conductor(Conductor &conduc,int conductorId,long fechaVencimi
 
 /** SUBPROGRAMAS DE INFRACCIONES **/
 
-void inicializar_archivo_infracciones(NodoConductor *listaconductores,NodoInfraccion *&listainfracciones)
+void inicializar_archivo_infracciones(NodoConductor *listaconductor,NodoInfraccion *listainfraccion)
 {
     // supone que ya hay conductores cargados por lo que les
     // agrega infracciones
     FILE *f;
+    Infraccion infra;
     f= fopen("procesados.bin","rb");
     if (f==NULL)
     {
         f= fopen("procesados.bin","wb");
-        generarInfraccionesRandom(listaconductores,listainfracciones,10,false);
+
+        llenar_struct_infraccion(infra,"20210817",1,generarNumeroEnteroRandom(10000,100000),generarNumeroEnteroRandom(1,24),1);
+        fwrite(&infra,sizeof(Infraccion),1,f);
+
+        llenar_struct_infraccion(infra,"20191021",2,generarNumeroEnteroRandom(10000,100000),generarNumeroEnteroRandom(1,24),1);
+        fwrite(&infra,sizeof(Infraccion),1,f);
+
+        llenar_struct_infraccion(infra,"20050515",3,generarNumeroEnteroRandom(10000,100000),generarNumeroEnteroRandom(1,24),2);
+        fwrite(&infra,sizeof(Infraccion),1,f);
+
+        llenar_struct_infraccion(infra,"20071205",4,generarNumeroEnteroRandom(10000,100000),generarNumeroEnteroRandom(1,24),2);
+        fwrite(&infra,sizeof(Infraccion),1,f);
+
+        llenar_struct_infraccion(infra,"20100108",5,generarNumeroEnteroRandom(10000,100000),generarNumeroEnteroRandom(1,24),3);
+        fwrite(&infra,sizeof(Infraccion),1,f);
 
     }
     fclose(f);
+
+    cout << "ACA" << endl;
+    f= fopen("procesados.bin","rb");
+    while (fread(&infra,sizeof(Infraccion),1,f))
+        mostrar_infra(infra);
     return;
 }
 
 // MOSTRAR Y LLENAR INFRACCIONES
+
+void mostrar_lista(NodoInfraccion *listainfracciones)
+{
+    while (listainfracciones)
+    {
+        mostrar_infra(listainfracciones->infraccion);
+        listainfracciones=listainfracciones->next;
+    }
+    return;
+}
 
 void mostrar_infra(Infraccion infra)
 {
@@ -570,7 +605,7 @@ void llenar_struct_infraccion(Infraccion &infra, char fecha[], int infra_id, flo
     return;
 }
 
-void generarInfraccionesRandom(NodoConductor *conductores, NodoInfraccion *&infracciones, int cantidadInfracciones,bool mostrar_infracciones)
+void generarInfraccionesRandom(NodoConductor *conductores, NodoInfraccion *&infracciones, int cantidadInfracciones, bool h)
 {
     NodoConductor *paux_conductor = conductores;
     NodoInfraccion *paux_infraccion = infracciones;
@@ -637,23 +672,22 @@ void generarInfraccionesRandom(NodoConductor *conductores, NodoInfraccion *&infr
         strcpy(nueva_infraccion.fechaHora, fechaHora);
 
         fwrite(&nueva_infraccion, sizeof(Infraccion), 1, f);
-        if (mostrar_infracciones)
-        {
-            cout << "---------------------------------------------------------------------------------" << endl;
-            cout << "La infraccion con la siguiente informacion fue guardada correctamente: " << endl;
-            cout << "id: " << nueva_infraccion.infraccionId << endl;
-            cout << "conductorID: " << nueva_infraccion.conductorId << endl;
-            cout << "monto: " << nueva_infraccion.monto << endl;
-            cout << "Fecha y hora: " << nueva_infraccion.fechaHora << endl;
-            cout << "provincia: " << nueva_infraccion.provincia << endl;
-            cout << "---------------------------------------------------------------------------------" << endl;
-        }
+
+        cout << "---------------------------------------------------------------------------------" << endl;
+        cout << "La infraccion con la siguiente informacion fue guardada correctamente: " << endl;
+        cout << "id: " << nueva_infraccion.infraccionId << endl;
+        cout << "conductorID: " << nueva_infraccion.conductorId << endl;
+        cout << "monto: " << nueva_infraccion.monto << endl;
+        cout << "Fecha y hora: " << nueva_infraccion.fechaHora << endl;
+        cout << "provincia: " << nueva_infraccion.provincia << endl;
+        cout << "---------------------------------------------------------------------------------" << endl;
+
         ingresar_ordenadamente_por_conducID(infracciones, nueva_infraccion);
 
         id_infraccion++;
     }
+    return;
 }
-
 // MOSTRAR INFRACCIONES CON UNA CONDICION
 
 void mostar_infra_de_conductor(NodoInfraccion *listainfracciones)
@@ -689,7 +723,7 @@ void mostrar_infractores_de_una_provincia(NodoInfraccion *listaInfracciones)
         return;
     }*/
 
-    //Validaci贸n solo para verificar que ingrese un numero correcto
+    //Validaci髇 solo para verificar que ingrese un numero correcto
     while (prov_a_buscar < 1 || prov_a_buscar > 24)
     {
         cout << "Ingrese provincia de la que quiera ver sus infractores (1-24): " << endl;
@@ -718,24 +752,23 @@ void mostrar_informe(NodoInfraccion *listainfracciones, NodoConductor *listacond
     cin >> id;
     NodoConductor *paux = listaconductores;
     bool encontrado = false;
-    while (paux && encontrado != true)
+    while (listaconductores && encontrado==false)
     {
-        if (paux->conductor.conductorId == id)
+        if (listaconductores->conductor.conductorId == id)
         {
             mostrarConductor(listaconductores->conductor);
             encontrado = true;
         }
-        paux = paux->next;
+        listaconductores = listaconductores->next;
     }
 
-    NodoInfraccion *paux2 = listainfracciones;
-    while (paux2)
+    while (listainfracciones)
     {
-        if (paux2->infraccion.conductorId == id)
+        if (listainfracciones->infraccion.conductorId == id)
         {
-            mostrar_infra(paux2->infraccion);
+            mostrar_infra(listainfracciones->infraccion);
         }
-        paux2 = paux2->next;
+        listainfracciones = listainfracciones->next;
     }
     return;
 }
@@ -750,7 +783,9 @@ void cargar_infracciones_en_memoria_ordena_conducID(NodoInfraccion *&listainfrac
     if (f)
     {
         while (fread(&infra, sizeof(Infraccion), 1, f))
+        {
             ingresar_ordenadamente_por_conducID(listainfracciones, infra);
+        }
         fclose(f);
     }
     else
@@ -759,6 +794,8 @@ void cargar_infracciones_en_memoria_ordena_conducID(NodoInfraccion *&listainfrac
         f = fopen("procesados.bin", "wb");
         fclose(f);
     }
+    cout << "\nLista" << endl;
+    mostrar_lista(listainfracciones);
     return;
 }
 
@@ -768,8 +805,10 @@ void ingresar_ordenadamente_por_conducID(NodoInfraccion *&lista, Infraccion tick
 {
     NodoInfraccion *paux = lista;
     NodoInfraccion *paux2 = NULL;
+    cout << "ID: " << ticket.infraccionId << endl;
     if (lista == NULL)
     { /// crear el primer elemento
+        cout << "1" << endl;
         lista = new NodoInfraccion();
         lista->previous = NULL;
         lista->next = NULL;
@@ -781,8 +820,9 @@ void ingresar_ordenadamente_por_conducID(NodoInfraccion *&lista, Infraccion tick
         while (paux && paux->next && paux->next->infraccion.conductorId < ticket.conductorId)
             paux = paux->next;
 
-        if (paux == lista && lista->infraccion.conductorId >= ticket.conductorId)
+        if (paux == lista && lista->infraccion.conductorId > ticket.conductorId)
         { /// agrega un nodo al principio
+            cout << "2" << endl;
             lista = new NodoInfraccion();
             lista->next = paux;
             paux->previous = lista;
@@ -793,6 +833,7 @@ void ingresar_ordenadamente_por_conducID(NodoInfraccion *&lista, Infraccion tick
 
         if (paux->next == NULL && paux->infraccion.conductorId <= ticket.conductorId)
         { /// si agrega al final
+            cout << "3" << endl;
             paux->next = new NodoInfraccion();
             paux->next->previous = paux;
             paux = paux->next;
@@ -802,6 +843,7 @@ void ingresar_ordenadamente_por_conducID(NodoInfraccion *&lista, Infraccion tick
         }
         if (paux->infraccion.conductorId < ticket.conductorId)
         { /// agrega en el medio de otros dos
+            cout << "4" << endl;
             paux2 = paux->next;
             paux->next = new NodoInfraccion();
             paux->next->previous = paux;
@@ -866,7 +908,7 @@ void ingresar_ordenadamente_por_infraccionID(NodoInfraccion *&lista, Infraccion 
     return;
 }
 
-// POP LISTA DE INFRACCIONES
+// BORRAR LISTA DE INFRACCIONES
 
 void borrar_lista_infracciones(NodoInfraccion *&lista)
 {
@@ -894,48 +936,36 @@ void borrar_lista_infracciones(NodoInfraccion *&lista)
     return;
 }
 
-// ARCHIVOS E INFRACCIONES
+/// ACTUALIZACION DE ARCHIVOS
 
-void actualizar_archivo_procesados(NodoInfraccion *listaInfracciones, NodoConductor *listaConductores)
+void actualizar_archivo_conductores(NodoConductor *listaconductores,long fechaActual)
 {
-    int cantidadInfracciones = 0;
-    int id_conductor_anterior = -1;
-    NodoConductor *paux_conductores = listaConductores;
+    FILE *f;
+    f = fopen("conductores.bin", "wb");
+    while (listaconductores)
+    {
+        if (listaconductores->conductor.fechaVencimiento > fechaActual && listaconductores->conductor.activo)
+        {
+            fwrite(&listaconductores->conductor, sizeof(Conductor), 1, f);
+        }
+
+        listaconductores = listaconductores->next;
+    }
+    fclose(f);
+    return;
+}
+
+void actualizar_archivo_procesados(NodoInfraccion *listaInfracciones)
+{
     // Para actualizarlo, lo sobreescribe cargandolo con la lista.
+    // tambien, actualiza el total de infracciones de cada conductor
     FILE *f;
     f = fopen("procesados.bin", "wb");
-
-    while (listaInfracciones && listaConductores)
+    while (listaInfracciones)
     {
         fwrite(&listaInfracciones->infraccion, sizeof(Infraccion), 1, f);
-
-        if (listaInfracciones->infraccion.conductorId != id_conductor_anterior)
-        {
-            if (cantidadInfracciones != 0)
-            {
-                listaConductores->conductor.totalInfracciones = cantidadInfracciones;
-                actualizarTotalinfraccionesArchivo(paux_conductores, listaConductores->conductor.conductorId, cantidadInfracciones);
-                listaConductores = listaConductores->next;
-            }
-
-            id_conductor_anterior = listaInfracciones->infraccion.conductorId;
-            cantidadInfracciones = 1;
-        }
-        else
-        {
-            cantidadInfracciones++;
-        }
-
-        if (!listaInfracciones->next)
-        {
-            listaConductores->conductor.totalInfracciones = cantidadInfracciones;
-            actualizarTotalinfraccionesArchivo(paux_conductores, listaConductores->conductor.conductorId, cantidadInfracciones);
-            listaConductores = listaConductores->next;
-        }
-
-        listaInfracciones = listaInfracciones->next;
+        listaInfracciones= listaInfracciones->next;
     }
-
     fclose(f);
     return;
 }
