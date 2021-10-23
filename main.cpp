@@ -463,13 +463,13 @@ void inicializar_archivo_conductores()
     if (f==NULL)
     {
         f= fopen("conductores.bin","wb");
-        llenar_struct_conductor(conduc,1,20212810,"luchofoglia@gmail.com");
+        llenar_struct_conductor(conduc,1,20210510,"luchofoglia@gmail.com");
         fwrite(&conduc,sizeof(conduc),1,f);
 
-        llenar_struct_conductor(conduc,2,99999999,"francofourmantin@gmail.com");
+        llenar_struct_conductor(conduc,2,20210921,"francofourmantin@gmail.com");
         fwrite(&conduc,sizeof(conduc),1,f);
 
-        llenar_struct_conductor(conduc,3,20212828,"juanbolatti@gmail.com");
+        llenar_struct_conductor(conduc,3,20210728,"juanbolatti@gmail.com");
         fwrite(&conduc,sizeof(conduc),1,f);
     }
     fclose(f);
