@@ -72,7 +72,7 @@ void mostrarConductor(Conductor conductor);
 void mostrar_informe(NodoInfraccion *listainfracciones, NodoConductor *listaconductores);
 
 //Listas conductores
-void cargarConductoresEnMemoria(NodoConductor *&listaConductores); //Esta funci贸n genera una lista SE de conductores
+void cargarConductoresEnMemoria(NodoConductor *&listaConductores); //Esta funci髇 genera una lista SE de conductores
 
 //CRUD Listas conductores
 void insertarConductorAlFinal(NodoConductor *&listaConductores, Conductor conductor);
@@ -94,7 +94,7 @@ void llenar_struct_infraccion(Infraccion &infra, char fecha[], int infra_id, flo
 void mostrar_infra(Infraccion infra);
 
 //Generar infracciones
-void generarInfraccionesRandom(NodoConductor *conductores, NodoInfraccion *&infracciones, int cantidadInfracciones);
+void generarInfraccionesRandom(NodoConductor *conductores, NodoInfraccion *&infracciones, int cantidadInfracciones, bool mostrar_infracciones);
 
 //Listas Infracciones
 void cargar_infracciones_en_memoria_ordena_conducID(NodoInfraccion *&listainfracciones);
@@ -155,7 +155,7 @@ int main()
                 cout << "Ingrese una cantidad de infracciones aleatorias a generar: " << endl;
                 cin >> cantidadRandomInfracciones;
             }
-            generarInfraccionesRandom(listaConductores, listaInfracciones, cantidadRandomInfracciones);
+            generarInfraccionesRandom(listaConductores, listaInfracciones, cantidadRandomInfracciones,true);
             procesar_lote(listaInfracciones, listaConductores);
             cantidadRandomInfracciones = 0;
             break;
@@ -192,7 +192,7 @@ void mostrarMenu(int &opcionMenu)
 
     cout << "**************************************************" << endl;
     cout << "Bienvenido al sistema de infracciones de Gobierno Nacional" << endl;
-    cout << "Por favor seleccione una opci贸n: " << endl;
+    cout << "Por favor seleccione una opci髇: " << endl;
     cout << "1 - Cargar un nuevo conductor" << endl;
     cout << "2 - Listar todos los conductores" << endl;
     cout << "3 - Desactivar un conductor" << endl;
@@ -244,7 +244,7 @@ void mostrarConductor(Conductor conductor)
 {
     cout << "-----------------------------------------------------------------" << endl;
 
-    cout << "Informaci贸n acerca del conductor con ID: " << conductor.conductorId << endl;
+    cout << "Informaci髇 acerca del conductor con ID: " << conductor.conductorId << endl;
 
     cout << "Email: " << conductor.email << endl;
 
@@ -532,6 +532,22 @@ void llenar_struct_conductor(Conductor &conduc,int conductorId,long fechaVencimi
 
 /** SUBPROGRAMAS DE INFRACCIONES **/
 
+void inicializar_archivo_infracciones(NodoConductor *listaconductores,NodoInfraccion *&listainfracciones)
+{
+    // supone que ya hay conductores cargados por lo que les
+    // agrega infracciones
+    FILE *f;
+    f= fopen("procesados.bin","rb");
+    if (f==NULL)
+    {
+        f= fopen("procesados.bin","wb");
+        generarInfraccionesRandom(listaconductores,listainfracciones,10,false);
+
+    }
+    fclose(f);
+    return;
+}
+
 // MOSTRAR Y LLENAR INFRACCIONES
 
 void mostrar_infra(Infraccion infra)
@@ -554,7 +570,7 @@ void llenar_struct_infraccion(Infraccion &infra, char fecha[], int infra_id, flo
     return;
 }
 
-void generarInfraccionesRandom(NodoConductor *conductores, NodoInfraccion *&infracciones, int cantidadInfracciones)
+void generarInfraccionesRandom(NodoConductor *conductores, NodoInfraccion *&infracciones, int cantidadInfracciones,bool mostrar_infracciones)
 {
     NodoConductor *paux_conductor = conductores;
     NodoInfraccion *paux_infraccion = infracciones;
@@ -621,16 +637,17 @@ void generarInfraccionesRandom(NodoConductor *conductores, NodoInfraccion *&infr
         strcpy(nueva_infraccion.fechaHora, fechaHora);
 
         fwrite(&nueva_infraccion, sizeof(Infraccion), 1, f);
-
-        cout << "---------------------------------------------------------------------------------" << endl;
-        cout << "La infraccion con la siguiente informacion fue guardada correctamente: " << endl;
-        cout << "id: " << nueva_infraccion.infraccionId << endl;
-        cout << "conductorID: " << nueva_infraccion.conductorId << endl;
-        cout << "monto: " << nueva_infraccion.monto << endl;
-        cout << "Fecha y hora: " << nueva_infraccion.fechaHora << endl;
-        cout << "provincia: " << nueva_infraccion.provincia << endl;
-        cout << "---------------------------------------------------------------------------------" << endl;
-
+        if (mostrar_infracciones)
+        {
+            cout << "---------------------------------------------------------------------------------" << endl;
+            cout << "La infraccion con la siguiente informacion fue guardada correctamente: " << endl;
+            cout << "id: " << nueva_infraccion.infraccionId << endl;
+            cout << "conductorID: " << nueva_infraccion.conductorId << endl;
+            cout << "monto: " << nueva_infraccion.monto << endl;
+            cout << "Fecha y hora: " << nueva_infraccion.fechaHora << endl;
+            cout << "provincia: " << nueva_infraccion.provincia << endl;
+            cout << "---------------------------------------------------------------------------------" << endl;
+        }
         ingresar_ordenadamente_por_conducID(infracciones, nueva_infraccion);
 
         id_infraccion++;
@@ -672,7 +689,7 @@ void mostrar_infractores_de_una_provincia(NodoInfraccion *listaInfracciones)
         return;
     }*/
 
-    //Validaci贸n solo para verificar que ingrese un numero correcto
+    //Validaci髇 solo para verificar que ingrese un numero correcto
     while (prov_a_buscar < 1 || prov_a_buscar > 24)
     {
         cout << "Ingrese provincia de la que quiera ver sus infractores (1-24): " << endl;
