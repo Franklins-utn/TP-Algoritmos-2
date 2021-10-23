@@ -731,7 +731,6 @@ void ingresar_ordenadamente_por_conducID(NodoInfraccion *&lista, Infraccion tick
 {
     NodoInfraccion *paux = lista;
     NodoInfraccion *paux2 = NULL;
-    cout << "ID: " << ticket.infraccionId << endl;
     if (lista == NULL)
     {
         lista = new NodoInfraccion();
