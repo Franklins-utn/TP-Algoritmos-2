@@ -68,7 +68,6 @@ void mostrarMenu(int &opcionMenu);
 void procesar_lote(NodoInfraccion *&listaInfracciones, NodoConductor *listaconductores);
 void inicializar_archivo_infracciones(NodoInfraccion *listainfracciones);
 void inicializar_archivo_conductores();
-void finalizar_jornada(NodoConductor *&listaconductores,NodoInfraccion *&listaInfracciones, long fechaActual);
 
 /** Conductores **/
 //Mostrar y llenar
@@ -77,7 +76,7 @@ void mostrarConductor(Conductor conductor);
 void mostrar_informe(NodoInfraccion *listainfracciones, NodoConductor *listaconductores);
 
 //Listas conductores
-void cargarConductoresEnMemoria(NodoConductor *&listaConductores); //Esta función genera una lista SE de conductores
+void cargarConductoresEnMemoria(NodoConductor *&listaConductores); //Esta funci�n genera una lista SE de conductores
 
 //CRUD Listas conductores
 void insertarConductorAlFinal(NodoConductor *&listaConductores, Conductor conductor);
@@ -110,11 +109,11 @@ void exportarCSV(NodoConductor *listaConductores);
 
 //Archivos
 void actualizar_archivo_conductores(NodoConductor *listaconductores,long fechaActual);
-void actualizar_archivo_procesados(NodoInfraccion *listaInfracciones);
 
 //Ayudines
 int generarNumeroEnteroRandom(int min, int max);
 void actualizarTotalinfracciones(NodoInfraccion *listaInfracciones, NodoConductor *listaConductores);
+void actualizarProcesados(char nombre[]);
 
 /// VERSION 2
 void generarInfraccionesRandom_V2(NodoConductor *conductores, NodoInfraccion *&infracciones, int cantidadInfracciones, char nombre[]);
@@ -145,11 +144,11 @@ int main()
 
 
     long fechaActual;
-    
+
     cout << "Ingrese fecha actual (AAAAMMDD):" << endl;
     cin >> fechaActual;
-    
-    
+
+
 
     mostrarMenu(opcionMenu);
 
@@ -208,7 +207,7 @@ void mostrarMenu(int &opcionMenu)
 
     cout << "**************************************************" << endl;
     cout << "Bienvenido al sistema de infracciones de Gobierno Nacional" << endl;
-    cout << "Por favor seleccione una opción: " << endl;
+    cout << "Por favor seleccione una opci�n: " << endl;
     cout << "1 - Cargar un nuevo conductor" << endl;
     cout << "2 - Listar todos los conductores" << endl;
     cout << "3 - Desactivar un conductor" << endl;
@@ -239,14 +238,26 @@ void procesar_lote_V2(NodoConductor *listaconductores,NodoInfraccion *&listainfr
     FILE *f;
     do
     {
+        if(f==NULL)
+        {
+            cout << "Error: el nombre del archivo no existe.\n" << endl;
+        }
         cout << "Ingrese nombre del lote a procesar:" << endl;
         cin >> nombre;
         f =fopen(nombre,"rb");
     } while (f==NULL);
+
+    fseek(f, 0, SEEK_END);
+    if(ftell(f) == 0)
+    {
+        // El archivo existe y esta vacio => lo carga con infracciones random
+        generarInfraccionesRandom_V2(listaconductores,listainfracciones,5,nombre);
+    }
+
     fclose(f);
-    // El archivo exsite => lo carga con infracciones random
-    generarInfraccionesRandom_V2(listaconductores,listainfracciones,5,nombre);
+
     actualizarTotalinfracciones_V2(nombre,listaconductores);
+    actualizarProcesados(nombre);
 
     return;
 }
@@ -272,6 +283,23 @@ void actualizarTotalinfracciones_V2(char nombre[], NodoConductor *listaConductor
 
             paux->conductor.totalInfracciones++;
         }
+    fclose(f);
+
+    return;
+}
+
+void actualizarProcesados(char nombre[])
+{
+    FILE *f, *f2;
+    f = fopen(nombre,"rb");
+    Infraccion infra;
+    f2 = fopen("procesados.bin", "ab");
+    while (fread(&infra,sizeof(Infraccion),1,f))
+    {
+        fwrite(&infra,sizeof(Infraccion),1,f2);
+    }
+    fclose(f);
+    fclose(f2);
     return;
 }
 
@@ -289,12 +317,9 @@ void generarInfraccionesRandom_V2(NodoConductor *conductores, NodoInfraccion *&i
     char fechaHora[13];
     float monto;
 
-    FILE *f,*f2;
+    FILE *f;
 
     f = fopen(nombre, "wb");
-    // Hice que lo "pisara" porque sino tenia un problema al actualizar el total de infracciones.
-    // Porque me contaba las infracciones que estaban antes.
-    f2= fopen("procesados.bin","ab");
 
     while (paux_conductor)
     {
@@ -338,9 +363,6 @@ void generarInfraccionesRandom_V2(NodoConductor *conductores, NodoInfraccion *&i
 
         fwrite(&nueva_infraccion, sizeof(Infraccion), 1, f);
 
-        fwrite(&nueva_infraccion, sizeof(Infraccion), 1, f2);
-
-
         cout << "---------------------------------------------------------------------------------" << endl;
         cout << "La infraccion con la siguiente informacion fue guardada correctamente: " << endl;
         cout << "id: " << nueva_infraccion.infraccionId << endl;
@@ -353,7 +375,6 @@ void generarInfraccionesRandom_V2(NodoConductor *conductores, NodoInfraccion *&i
         id_infraccion++;
     }
     fclose(f);
-    fclose(f2);
     return;
 }
 
@@ -388,7 +409,7 @@ void mostrarConductor(Conductor conductor)
 {
     cout << "-----------------------------------------------------------------" << endl;
 
-    cout << "Información acerca del conductor con ID: " << conductor.conductorId << endl;
+    cout << "Informaci�n acerca del conductor con ID: " << conductor.conductorId << endl;
 
     cout << "Email: " << conductor.email << endl;
 
@@ -555,16 +576,6 @@ void cargarConductoresEnMemoria(NodoConductor *&listaConductores)
     }
 
     fclose(f);
-    return;
-}
-
-void finalizar_jornada(NodoConductor *&listaConductores,NodoInfraccion *&listaInfracciones,long fechaActual)
-{
-    actualizarTotalinfracciones(listaInfracciones,listaConductores);
-    actualizar_archivo_conductores(listaConductores,fechaActual);
-    actualizar_archivo_procesados(listaInfracciones);
-    borrar_lista_conductor(listaConductores);
-    borrar_lista_infracciones(listaInfracciones);
     return;
 }
 
@@ -968,18 +979,6 @@ void actualizar_archivo_conductores(NodoConductor *listaconductores,long fechaAc
     return;
 }
 
-void actualizar_archivo_procesados(NodoInfraccion *listaInfracciones)
-{
-    FILE *f;
-    f = fopen("procesados.bin", "wb");
-    while (listaInfracciones)
-    {
-        fwrite(&listaInfracciones->infraccion, sizeof(Infraccion), 1, f);
-        listaInfracciones= listaInfracciones->next;
-    }
-    fclose(f);
-    return;
-}
 
 /**** FIN SUBPROGRAMAS DE INFRACCIONES ****/
 
