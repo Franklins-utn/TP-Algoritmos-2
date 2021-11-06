@@ -113,7 +113,7 @@ void actualizar_archivo_conductores(NodoConductor *listaconductores,long fechaAc
 //Ayudines
 int generarNumeroEnteroRandom(int min, int max);
 void actualizarTotalinfracciones(NodoInfraccion *listaInfracciones, NodoConductor *listaConductores);
-void actualizarProcesados(char nombre[]);
+void actualizarProcesados(char nombre[],NodoInfraccion *listainfracciones);
 
 /// VERSION 2
 void generarInfraccionesRandom_V2(NodoConductor *conductores, NodoInfraccion *&infracciones, int cantidadInfracciones, char nombre[]);
@@ -128,7 +128,7 @@ int main()
 {
     setlocale(LC_ALL, "Spanish");
 
-    int opcionMenu;
+    int opcionMenu=-1;
     int conductorId;
     NodoConductor *listaConductores = NULL;
     NodoInfraccion *listaInfracciones = NULL;
@@ -150,10 +150,9 @@ int main()
 
 
 
-    mostrarMenu(opcionMenu);
-
     while (opcionMenu != 0)
     {
+        mostrarMenu(opcionMenu);
         switch (opcionMenu)
         {
         case 1:
@@ -186,12 +185,12 @@ int main()
         case 9:
             actualizar_archivo_conductores(listaConductores,fechaActual);
             fechaActual++;
-            opcionMenu= 0;
+            opcionMenu = 0;
             break;
         default:
             break;
         }
-        mostrarMenu(opcionMenu);
+
     }
     borrar_lista_conductor(listaConductores);
     borrar_lista_infracciones(listaInfracciones);
@@ -203,7 +202,6 @@ int main()
 
 void mostrarMenu(int &opcionMenu)
 {
-    opcionMenu = -1;
 
     cout << "**************************************************" << endl;
     cout << "Bienvenido al sistema de infracciones de Gobierno Nacional" << endl;
@@ -221,14 +219,10 @@ void mostrarMenu(int &opcionMenu)
     cout << "**************************************************" << endl;
 
     cin >> opcionMenu;
-}
 
-void procesar_lote(NodoInfraccion *&listaInfracciones, NodoConductor *listaconductores)
-{
-    generarInfraccionesRandom(listaconductores,listaInfracciones,generarNumeroEnteroRandom(15,25));
-    actualizarTotalinfracciones(listaInfracciones,listaconductores);
     return;
 }
+
 
 /// VERSION 2 DE TODO LO NUEVO
 
@@ -250,14 +244,13 @@ void procesar_lote_V2(NodoConductor *listaconductores,NodoInfraccion *&listainfr
     fseek(f, 0, SEEK_END);
     if(ftell(f) == 0)
     {
-        // El archivo existe y esta vacio => lo carga con infracciones random
         generarInfraccionesRandom_V2(listaconductores,listainfracciones,5,nombre);
     }
 
     fclose(f);
 
     actualizarTotalinfracciones_V2(nombre,listaconductores);
-    actualizarProcesados(nombre);
+    actualizarProcesados(nombre,listainfracciones);
 
     return;
 }
@@ -288,15 +281,31 @@ void actualizarTotalinfracciones_V2(char nombre[], NodoConductor *listaConductor
     return;
 }
 
-void actualizarProcesados(char nombre[])
+void actualizarProcesados(char nombre[],NodoInfraccion *listainfracciones)
 {
     FILE *f, *f2;
     f = fopen(nombre,"rb");
     Infraccion infra;
-    f2 = fopen("procesados.bin", "ab");
+    int maxInfraccionId= 0;
+    NodoInfraccion *paux_infraccion = listainfracciones;
+
+    f2 = fopen("procesados.bin", "rb");
+    while (fread(&infra,sizeof(Infraccion),1,f2))
+    {
+        if (infra.infraccionId > maxInfraccionId)
+        {
+            maxInfraccionId = infra.infraccionId;
+        }
+    }
+    fclose(f2);
+
+    f2 = fopen("procesados.bin","ab");
+
     while (fread(&infra,sizeof(Infraccion),1,f))
     {
+        infra.infraccionId= maxInfraccionId+1;
         fwrite(&infra,sizeof(Infraccion),1,f2);
+        maxInfraccionId++;
     }
     fclose(f);
     fclose(f2);
@@ -365,7 +374,6 @@ void generarInfraccionesRandom_V2(NodoConductor *conductores, NodoInfraccion *&i
 
         cout << "---------------------------------------------------------------------------------" << endl;
         cout << "La infraccion con la siguiente informacion fue guardada correctamente: " << endl;
-        cout << "id: " << nueva_infraccion.infraccionId << endl;
         cout << "conductorID: " << nueva_infraccion.conductorId << endl;
         cout << "monto: " << nueva_infraccion.monto << endl;
         cout << "Fecha y hora: " << nueva_infraccion.fechaHora << endl;
